@@ -1,0 +1,5 @@
+pillow>=7.0.0
+numpy>=1.18.1
+networkx>=2.2
+pandas>=1.0.3
+rdkit>=2020.03.1.0
