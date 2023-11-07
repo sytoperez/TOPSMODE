@@ -1,0 +1,10 @@
+C:/Benchmarks/N_minus_O/TOPSMODEN_minus_O_lbl_QSAR-ready_Arom/descriptores_ato/modelos/Modelos.csv
+C:/Benchmarks/N/TOPSMODEN_lbl_QSAR-ready_Arom/descriptores_ato/modelos/Modelos_todos.csv
+C:/Benchmarks/TOPSMODEN_O_lbl_QSAR-ready_Arom/TOPSMODEN_O_lbl_QSAR-ready_Arom/descriptores_ato/modelos/Modelo_Todos.csv
+C:/Benchmarks/N_minus_O/TOPSMODEN_minus_O_lbl_QSAR-ready_Arom/descriptores_ato/modelos/Modelos_todos.csv
+C:/Benchmarks/amide/TOPSMODEamide_lbl_QSAR-ready_Arom/descriptores_ato/modelos/Modelos_todos.csv
+C:/Benchmark_sin_curar/modelos/Modelos_TOPSMODE_sinnan_NminusO_total_mejores.csv
+C:/Benchmark_sin_curar/modelos/Modelos_TOPSMODE_raw_sinan_amide_total_mejores.csv
+C:/Benchmark_sin_curar/modelos/Modelos_TOPSMODE_raw_sinan_amide_20.csv
+C:/Benchmark_sin_curar/modelos/Modelos_TOPSMODE_raw_sinnan_N_total_mejores.csv
+C:/Benchmark_sin_curar/modelos/Modelos_TOPSMODE_raw_sinnan_N_O_total_mejores.csv

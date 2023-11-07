@@ -1,0 +1,10 @@
+C:/Benchmark_sin_curar/N_O_lbl.sdf
+C:/Benchmark_sin_curar/N_minus_O_lbl.sdf
+C:/Benchmark_sin_curar/amide_lbl.sdf
+C:/Benchmark_sin_curar/amide_class_lbl.sdf
+C:/Benchmark_sin_curar/pharmacophore.sdf
+C:/Benchmark_sin_curar/N_minus_O_lbl_train.sdf
+C:/Benchmark_sin_curar/amide_lbl_train.sdf
+C:/Benchmark_sin_curar/N_lbl_train.sdf
+C:/Benchmark_sin_curar/N_O_lbl_train.sdf
+C:/DESCRIPTORES/Modeslab_gui/prueba/TOPS-MODE_80_prep_reducido_sincliffs_sinout_prep.sdf
