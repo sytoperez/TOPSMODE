@@ -258,7 +258,7 @@ def calcular_ato(moleculas,variables, coeff, names, linear_set, verbose):
                 at[i].SetDoubleProp('Pol', valores_Pol[i])
 
         if 'Ab-R2' or 'api2' or 'b2h' or 'b2o' or 'l16' in nombres:
-            order_Ab, patts_Ab = calc._ReadPatts_Ab(os.path.join(get_script_path(),'/SMARTS/Abraham_3.txt'))
+            order_Ab, patts_Ab = calc._ReadPatts_Ab(os.path.join(get_script_path(),'SMARTS/Abraham_3.txt'))
             valores_Ab = calc._pyGetAtomContribs_Ab2(mol_sinH, patts_Ab, order_Ab, verbose)  # Abraham properties
             if 'Ab-R2' in nombres:
                 for i in range(len(at)):
