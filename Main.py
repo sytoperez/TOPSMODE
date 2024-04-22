@@ -688,18 +688,17 @@ class Tab_2(ttk.Frame):
             selectedItem = self.tree.selection()[0]
             self.n_mod = int(self.tree.item(selectedItem)['values'][0].split("_")[1])
             if self.tipo == 'bond':
-                ruta = os.path.join(os.path.dirname(self.path.get()),
-                                    "TOPSMODE/Contr_" + self.path.get().rsplit('/', 1)[1].rsplit(".", 1)[0] + "_" +
+                ruta = os.path.join(os.path.dirname(self.path.get()),"TOPSMODE" + self.path.get().rsplit('/', 1)[1].rsplit(".", 1)[0]+
+                                    "/Contr_" + self.path.get().rsplit('/', 1)[1].rsplit(".", 1)[0] + "_" +
                                     self.csv_path.get().rsplit('/', 1)[1].rsplit(".", 1)[0] + "\\modelo_" + str(
                                         self.n_mod) + "\\" + str(self.contr_name.get()) + "_" + str(
                                         self.n_mol) + '.png')
             else:
-                ruta = os.path.join(os.path.dirname(self.path.get()),
-                                    "TOPSMODE/Contr_ato" + self.path.get().rsplit('/', 1)[1].rsplit(".", 1)[0] + "_" +
+                ruta = os.path.join(os.path.dirname(self.path.get()),"TOPSMODE" + self.path.get().rsplit('/', 1)[1].rsplit(".", 1)[0]+
+                                    "/Contr_ato" + self.path.get().rsplit('/', 1)[1].rsplit(".", 1)[0] + "_" +
                                     self.csv_path.get().rsplit('/', 1)[1].rsplit(".", 1)[0] + "\\modelo_" + str(
                                         self.n_mod) + "\\" + str(self.contr_name.get()) + "_" + str(
                                         self.n_mol) + '.png')
-
             if os.path.exists(ruta):
                 self.original = Image.open(ruta)
             else:
@@ -721,17 +720,17 @@ class Tab_2(ttk.Frame):
 
     def mas(self):
         if self.tipo == 'bond':
-            camino = os.path.join(os.path.dirname(self.path.get()),
-                                  "TOPSMODE/Contr_" + self.path.get().rsplit('/', 1)[1].rsplit(".", 1)[
+            camino = os.path.join(os.path.dirname(self.path.get()),"TOPSMODE" + self.path.get().rsplit('/', 1)[1].rsplit(".", 1)[0]+
+                                  "/Contr_" + self.path.get().rsplit('/', 1)[1].rsplit(".", 1)[
                                       0] + "_" + self.csv_path.get().rsplit('/', 1)[1].rsplit(".", 1)[
                                       0] + "\\modelo_" + str(self.n_mod) + "\\" + str(
-                                      self.contr_name.get()) + "_" + str(self.n_mol + 1) + '.png')
+                                      self.contr_name.get()) + "_" + str(self.n_mol+1) + '.png')
         else:
-            camino = os.path.join(os.path.dirname(self.path.get()),
-                                  "TOPSMODE/Contr_ato" + self.path.get().rsplit('/', 1)[1].rsplit(".", 1)[
+            camino = os.path.join(os.path.dirname(self.path.get()),"TOPSMODE" + self.path.get().rsplit('/', 1)[1].rsplit(".", 1)[0]+
+                                  "/Contr_ato" + self.path.get().rsplit('/', 1)[1].rsplit(".", 1)[
                                       0] + "_" + self.csv_path.get().rsplit('/', 1)[1].rsplit(".", 1)[
                                       0] + "\\modelo_" + str(self.n_mod) + "\\" + str(
-                                      self.contr_name.get()) + "_" + str(self.n_mol + 1) + '.png')
+                                      self.contr_name.get()) + "_" + str(self.n_mol+1) + '.png')
         if os.path.exists(camino):
             self.n_mol += 1
             self.original = Image.open(camino)
@@ -743,21 +742,23 @@ class Tab_2(ttk.Frame):
         self.label.config(text=self.names[self.n_mol - 1])
 
     def menos(self):
-        if self.tipo == 'bond':
-            camino = os.path.join(os.path.dirname(self.path.get()),
-                                  "TOPSMODE/Contr_" + self.path.get().rsplit('/', 1)[1].rsplit(".", 1)[0] + "_" +
-                                  self.csv_path.get().rsplit('/', 1)[1].rsplit(".", 1)[0] + "\\modelo_" + str(
-                                      self.n_mod) + "\\" + str(self.contr_name.get()) + "_" + str(
-                                      self.n_mol - 1) + '.png')
+        if (self.n_mol-1==0):
+            self.n_mol = 1
         else:
-            camino = os.path.join(os.path.dirname(self.path.get()),
-                                  "TOPSMODE/Contr_ato" + self.path.get().rsplit('/', 1)[1].rsplit(".", 1)[0] + "_" +
+            self.n_mol -= 1
+        if self.tipo == 'bond':
+            camino = os.path.join(os.path.dirname(self.path.get()),"TOPSMODE" + self.path.get().rsplit('/', 1)[1].rsplit(".", 1)[0]+
+                                  "/Contr_" + self.path.get().rsplit('/', 1)[1].rsplit(".", 1)[0] + "_" +
                                   self.csv_path.get().rsplit('/', 1)[1].rsplit(".", 1)[0] + "\\modelo_" + str(
                                       self.n_mod) + "\\" + str(self.contr_name.get()) + "_" + str(
-                                      self.n_mol - 1) + '.png')
-
+                                      self.n_mol) + '.png')
+        else:
+            camino = os.path.join(os.path.dirname(self.path.get()),"TOPSMODE" + self.path.get().rsplit('/', 1)[1].rsplit(".", 1)[0]+
+                                  "/Contr_ato" + self.path.get().rsplit('/', 1)[1].rsplit(".", 1)[0] + "_" +
+                                  self.csv_path.get().rsplit('/', 1)[1].rsplit(".", 1)[0] + "\\modelo_" + str(
+                                      self.n_mod) + "\\" + str(self.contr_name.get()) + "_" + str(
+                                      self.n_mol) + '.png')
         if os.path.exists(camino):
-            self.n_mol -= 1
             self.original = Image.open(camino)
         else:
             self.original = Image.open(os.path.join(get_script_path(), 'No_mol.png'))
