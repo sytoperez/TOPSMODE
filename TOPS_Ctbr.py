@@ -65,7 +65,7 @@ def plot_contributions(moleculas, in_file, type_set, total_only):
                 if e != lista[c + e - 1]:
                     print('Error datos no coinciden. Atom ' + str(e) + '!=' + lista[c + e - 1])
                     return
-                pos = mol_sinH.GetConformer().GetAtomPosition(atom)
+                pos = mol_sinH.GetConformer().GetAtomPosition(atom.GetIdx())
                 locs.append(Geometry.Point2D(pos.x, pos.y))
 
         ps = Draw.ContourParams()
@@ -591,6 +591,7 @@ def main_params(in_fname, in_model, out_fname, id_field_set, type_set, linear_se
         nombres=np.append(nombres, tmp)
     variables = []
     f = 0
+
     if (type_set == 'bond'):
         path = os.path.join(path, "TOPSMODE" + archivo[1].split(".")[0] + "\\Contr_" +
                             in_fname.rsplit('/', 1)[1].rsplit(".", 1)[0] + "_" +
@@ -599,6 +600,7 @@ def main_params(in_fname, in_model, out_fname, id_field_set, type_set, linear_se
         path = os.path.join(path, "TOPSMODE" + archivo[1].split(".")[0] + "\\Contr_ato" +
                             in_fname.rsplit('/', 1)[1].rsplit(".", 1)[0] + "_" +
                             in_model.rsplit('/', 1)[1].rsplit(".", 1)[0] + "\\")
+
     for modelo in modelos:
         f+=1
         if verbose:
@@ -686,7 +688,7 @@ def main_params(in_fname, in_model, out_fname, id_field_set, type_set, linear_se
 
 def main():
 
-    parser = argparse.ArgumentParser(description='Calculate TOPSMODE contribution for single model.')
+    parser = argparse.ArgumentParser(description='Calculate TOPSMODE contribution for models.')
     parser.add_argument('-i', '--in', metavar='input.sdf', required=True,
                         help='input file (allowed formats: sdf) with standardized structures')
     parser.add_argument('-m', '--im', metavar='input.csv', required=True,
