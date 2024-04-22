@@ -17,5 +17,7 @@ This application calculates the spectral moments descriptors based on the TOPolo
 -v Integer value. 0 - print no details. 1 and more - verbose output. Default: 0.
 
 ### CHANGELOG
+**v1.1.0** (22/4/2024)
+- Fix errors in atomic contribution calculation.
 **v1.0.0** (7/11/2023)
 Initial version
