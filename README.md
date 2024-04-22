@@ -8,11 +8,11 @@ This application calculates the spectral moments descriptors based on the TOPolo
 4. Download the .zip and unzip it in the supercomputing centers you are going to use
 ### Usage
 Returns 2D TOPSMODE descriptors for compounds
-```text TOPS -i input.sdf -o output (args) ```
+```TOPS -i input.sdf -o output (args)```
 
 
 Returns molecular contributions based on models coefficients/importance of descriptors
-```text TOPS_Ctbr -i input.rdf -o output (args) ```
+```TOPS_Ctbr -i input.rdf -o output (args)```
 
 ### Available arguments for TOPS.py (descriptors calculation)
 -i input file (allowed formats: sdf) with standardized structures
