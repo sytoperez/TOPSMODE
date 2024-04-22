@@ -7,7 +7,7 @@ This application calculates the spectral moments descriptors based on the TOPolo
 3. gh repo clone sytoperez/TOPSMODE
 4. Download the .zip and unzip it in the supercomputing centers you are going to use
 ### Available arguments
--i input file (allowed formats: sdf) with standardized structures
+- i input file (allowed formats: sdf) with standardized structures
 -o output file name with calculated descriptors
 -t descriptors type: ato for atomic calculation and bond for bond calculation
 -d descriptors to build. Default all
