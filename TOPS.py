@@ -21,6 +21,16 @@ numero = 15
 path = ""
 descriptores = ['Std', 'Dip', 'Dip2', 'Hyd', 'Pols', 'Mol', 'Pol', 'Van', 'Gas', 'Ato', 'Ab-R2', 'Ab-pi2H', 'Ab-sumA2H', 'Ab-sumB2H', 'Ab-sumB20', 'Ab-logL16']
 descriptores_meta = ' '.join(descriptores)
+smarts = {}
+
+def load_smarts():
+    smarts['Abraham_3'] = calc._ReadPatts_Ab(os.path.join(get_script_path(),'SMARTS/Abraham_3.txt'))
+    smarts['Abraham_4'] = calc._ReadPatts_Abalpha(os.path.join(get_script_path(),'SMARTS/Abraham_4.txt'))
+    smarts['Crippen'] = calc._ReadPatts(os.path.join(get_script_path(),'SMARTS/Crippen.txt'))
+    smarts['Dip'] = calc._ReadPatts_Pol(os.path.join(get_script_path(),'SMARTS/Dip.txt'))
+    smarts['Pols'] = calc._ReadPatts_Pol(os.path.join(get_script_path(),'SMARTS/Pols.txt'))
+    smarts['Pol'] = calc._ReadPatts_Pol(os.path.join(get_script_path(),'SMARTS/Pol.txt'))
+    smarts['Std'] = calc._ReadPatts_Pol(os.path.join(get_script_path(),'SMARTS/Std.txt'))
 
 def get_script_path():
     return os.path.abspath(os.path.dirname(__file__))
@@ -30,488 +40,215 @@ def get_suffix(des_type):
         return 'uato0'
     return 'u0'
 
-"""
-def calcular_ato(moleculas, nombres, numero, verbose):
-    if verbose:
+def get_molname(mol, id_field_set, id):
+    tmp = ""
+    if id_field_set == 'title':
+        tmp = mol.GetProp('_Name')
+        if tmp == "":
+            tmp = 'MolID_' + str(id)
+            id += 1
+    elif id_field_set == 'gen' or id_field_set is None:
+        tmp = 'MolID_' + str(id)
+        id += 1
+    return tmp, id
+
+def calcular_ato(mol, nombres, numero, verbose):
+    if verbose == 1:
         print('calculating descriptors...')
 
     overall = np.zeros(numero*len(nombres)+1)
 
-    m = 0
-    for mol in moleculas:
-        m = m + 1
-        if verbose:
-            print('\tMolecula %d' % (m))
-        mol_H = Chem.AddHs(mol, explicitOnly=True)
-        mol_sinH = Chem.RemoveHs(mol_H, False, True, False)
-        mol_ch_sinH = Chem.RemoveHs(mol_H, False, True, True)
-        Chem.SanitizeMol(mol_H)
-        Chem.SanitizeMol(mol_sinH)
-        at = mol_sinH.GetAtoms()
-        bonds = mol_sinH.GetBonds()
-        at_ch = mol_ch_sinH.GetAtoms()
-        fila = np.array([])
-        fila = np.append(fila, [mol_sinH.GetNumAtoms()])
-        fila_std = np.array([])
-        fila_dip = np.array([])
-        fila_dip2 = np.array([])
-        fila_hyd = np.array([])
-        fila_mr = np.array([])
-        fila_pls = np.array([])
-        fila_vdw = np.array([])
-        fila_chg = np.array([])
-        fila_atw = np.array([])
-        fila_pol = np.array([])
-        fila_ar2 = np.array([])
-        fila_api2 = np.array([])
-        fila_b2h = np.array([])
-        fila_b2o = np.array([])
-        fila_l16 = np.array([])
-        fila_a2h = np.array([])
+    mol_H = Chem.AddHs(mol, explicitOnly=True)
+    mol_sinH = Chem.RemoveHs(mol_H, False, True, False)
+    mol_ch_sinH = Chem.RemoveHs(mol_H, False, True, True)
+    Chem.SanitizeMol(mol_H)
+    Chem.SanitizeMol(mol_sinH)
+    at = mol_sinH.GetAtoms()
+    bonds = mol_sinH.GetBonds()
+    at_ch = mol_ch_sinH.GetAtoms()
 
-        if 'Std' in nombres:
-            order_Std, patts_Std = calc._ReadPatts_Pol(os.path.join(get_script_path(),'SMARTS/Std.txt'))
-            valores_std = calc._pyGetContribs(mol_sinH, patts_Std, order_Std)  # Standard distances
-            c = 0
-            for enlace in bonds:
-                c = c + 1
-                enlace.SetProp('Std1', str(round(valores_std[enlace.GetIdx()], 6)))
-                at_inicial = at[enlace.GetBeginAtomIdx()]
-                at_final = at[enlace.GetEndAtomIdx()]
-                if (at_final.HasProp('Std')==0):
-                    at_final.SetDoubleProp('Std',(valores_std[enlace.GetIdx()] / (2*at_final.GetDegree())))
-                else:
-                    at_final.SetDoubleProp('Std', at_final.GetDoubleProp('Std') + (valores_std[enlace.GetIdx()] / (2*at_final.GetDegree())))
-                if (at_inicial.HasProp('Std')==0):
-                    at_inicial.SetDoubleProp('Std',(valores_std[enlace.GetIdx()] / (2*at_inicial.GetDegree())))
-                else:
-                    at_inicial.SetDoubleProp('Std', at_inicial.GetDoubleProp('Std') + (valores_std[enlace.GetIdx()] / (2*at_inicial.GetDegree())))
+    fila = np.array([mol_sinH.GetNumAtoms()])
 
-            des_std = calc.calcular(mol_sinH, 'Std', numero,'ato')
-            fila_std = np.append(fila_std, des_std)
+    if 'Std' in nombres:
+        order_Std, patts_Std = smarts['Std']
+        valores_std = calc._pyGetContribs(mol_sinH, patts_Std, order_Std)  # Standard distances
+        for enlace in bonds:
+            enlace.SetProp('Std1', str(round(valores_std[enlace.GetIdx()], 6)))
+            at_inicial = at[enlace.GetBeginAtomIdx()]
+            at_final = at[enlace.GetEndAtomIdx()]
+            if (at_final.HasProp('Std')==0):
+                at_final.SetDoubleProp('Std',(valores_std[enlace.GetIdx()] / (2*at_final.GetDegree())))
+            else:
+                at_final.SetDoubleProp('Std', at_final.GetDoubleProp('Std') + (valores_std[enlace.GetIdx()] / (2*at_final.GetDegree())))
+            if (at_inicial.HasProp('Std')==0):
+                at_inicial.SetDoubleProp('Std',(valores_std[enlace.GetIdx()] / (2*at_inicial.GetDegree())))
+            else:
+                at_inicial.SetDoubleProp('Std', at_inicial.GetDoubleProp('Std') + (valores_std[enlace.GetIdx()] / (2*at_inicial.GetDegree())))
 
-        if 'Dip' in nombres:
-            order_Dip, patts_Dip = calc._ReadPatts_Pol(os.path.join(get_script_path(),'SMARTS/Dip.txt'))
-            valores_dip = calc._pyGetContribs(mol_sinH, patts_Dip, order_Dip)  # Dipole moments
-            c = 0
-            for enlace in bonds:
-                c = c + 1
-                enlace.SetProp('Dip1', str(round(valores_dip[enlace.GetIdx()], 6)))
-                at_inicial = at[enlace.GetBeginAtomIdx()]
-                at_final = at[enlace.GetEndAtomIdx()]
+        des_std = calc.calcular(mol_sinH, 'Std', numero,'ato')
+        fila = np.append(fila, des_std)
 
-                if (at_final.HasProp('Dip')==0):
-                    at_final.SetDoubleProp('Dip',(valores_std[enlace.GetIdx()] / (2*at_final.GetDegree())))
-                else:
-                    at_final.SetDoubleProp('Dip', at_final.GetDoubleProp('Dip') + (valores_std[enlace.GetIdx()] / (2*at_final.GetDegree())))
-                if (at_inicial.HasProp('Dip')==0):
-                    at_inicial.SetDoubleProp('Dip',(valores_std[enlace.GetIdx()] / (2*at_inicial.GetDegree())))
-                else:
-                    at_inicial.SetDoubleProp('Dip', at_inicial.GetDoubleProp('Dip') + (valores_std[enlace.GetIdx()] / (2*at_inicial.GetDegree())))
+    if 'Dip' in nombres:
+        order_Dip, patts_Dip = smarts['Dip']
+        valores_dip = calc._pyGetContribs(mol_sinH, patts_Dip, order_Dip)  # Dipole moments
+        for enlace in bonds:
+            enlace.SetProp('Dip1', str(round(valores_dip[enlace.GetIdx()], 6)))
+            at_inicial = at[enlace.GetBeginAtomIdx()]
+            at_final = at[enlace.GetEndAtomIdx()]
 
-            des_dip = calc.calcular(mol_sinH, 'Dip', numero,'ato')
-            fila_dip = np.append(fila_dip, des_dip)
+            if (at_final.HasProp('Dip')==0):
+                at_final.SetDoubleProp('Dip',(valores_std[enlace.GetIdx()] / (2*at_final.GetDegree())))
+            else:
+                at_final.SetDoubleProp('Dip', at_final.GetDoubleProp('Dip') + (valores_std[enlace.GetIdx()] / (2*at_final.GetDegree())))
+            if (at_inicial.HasProp('Dip')==0):
+                at_inicial.SetDoubleProp('Dip',(valores_std[enlace.GetIdx()] / (2*at_inicial.GetDegree())))
+            else:
+                at_inicial.SetDoubleProp('Dip', at_inicial.GetDoubleProp('Dip') + (valores_std[enlace.GetIdx()] / (2*at_inicial.GetDegree())))
 
-        if 'Dip2' in nombres:
-            valores_dip2 = calc.calcular_dipolos2(mol_sinH)  # Dipole moments2
-            c = 0
-            for enlace in bonds:
-                c = c + 1
-                enlace.SetProp('Dip21', str(round(valores_dip2[enlace.GetIdx()], 6)))
-                at_inicial = at[enlace.GetBeginAtomIdx()]
-                at_final = at[enlace.GetEndAtomIdx()]
-                if (at_final.HasProp('Dip2') == 0):
-                    at_final.SetDoubleProp('Dip2', (valores_std[enlace.GetIdx()] / (2*at_final.GetDegree())))
-                else:
-                    at_final.SetDoubleProp('Dip2', at_final.GetDoubleProp('Dip2') + (
-                                valores_std[enlace.GetIdx()] / (2*at_final.GetDegree())))
-                if (at_inicial.HasProp('Dip2') == 0):
-                    at_inicial.SetDoubleProp('Dip2', (valores_std[enlace.GetIdx()] / (2*at_inicial.GetDegree())))
-                else:
-                    at_inicial.SetDoubleProp('Dip2', at_inicial.GetDoubleProp('Dip2') + (
-                                valores_std[enlace.GetIdx()] / (2*at_inicial.GetDegree())))
+        des_dip = calc.calcular(mol_sinH, 'Dip', numero,'ato')
+        fila = np.append(fila, des_dip)
 
-            des_dip2 = calc.calcular(mol_sinH, 'Dip2', numero,'ato')
-            fila_dip2 = np.append(fila_dip2, des_dip2)
+    if 'Dip2' in nombres:
+        valores_dip2 = calc.calcular_dipolos2(mol_sinH)  # Dipole moments2
+        for enlace in bonds:
+            enlace.SetProp('Dip21', str(round(valores_dip2[enlace.GetIdx()], 6)))
+            at_inicial = at[enlace.GetBeginAtomIdx()]
+            at_final = at[enlace.GetEndAtomIdx()]
+            if (at_final.HasProp('Dip2') == 0):
+                at_final.SetDoubleProp('Dip2', (valores_std[enlace.GetIdx()] / (2*at_final.GetDegree())))
+            else:
+                at_final.SetDoubleProp('Dip2', at_final.GetDoubleProp('Dip2') + (
+                            valores_std[enlace.GetIdx()] / (2*at_final.GetDegree())))
+            if (at_inicial.HasProp('Dip2') == 0):
+                at_inicial.SetDoubleProp('Dip2', (valores_std[enlace.GetIdx()] / (2*at_inicial.GetDegree())))
+            else:
+                at_inicial.SetDoubleProp('Dip2', at_inicial.GetDoubleProp('Dip2') + (
+                            valores_std[enlace.GetIdx()] / (2*at_inicial.GetDegree())))
 
-        if 'Hyd' or 'Mol' in nombres:
-            order, patts = calc._ReadPatts(os.path.join(get_script_path(),'SMARTS/Crippen.txt'))
-            valores_hyd_MR = calc._pyGetAtomContribs(mol_sinH, patts, order, verbose)  # Hydrof and MR Crippen
-            if 'Hyd' in nombres:
-                for i in range(len(at)):
-                    at[i].SetDoubleProp('Hyd', valores_hyd_MR[i][0])
-                des_hyd = calc.calcular(mol_sinH, 'Hyd', numero,'ato')
-                fila_hyd = np.append(fila_hyd, des_hyd)
-            if 'Mol' in nombres:
-                for i in range(len(at)):
-                    at[i].SetDoubleProp('Mol', valores_hyd_MR[i][1])
+        des_dip2 = calc.calcular(mol_sinH, 'Dip2', numero,'ato')
+        fila = np.append(fila, des_dip2)
 
-                des_mol = calc.calcular(mol_sinH, 'Mol', numero,'ato')
-                fila_mr = np.append(fila_mr, des_mol)
-
-        if 'Pols' in nombres:
-            order_Pols, patts_Pols = calc._ReadPatts_Pol(os.path.join(get_script_path(),'SMARTS/Pols.txt'))
-            valores_Pols = calc._pyGetAtomContribs_Pol(mol_sinH, patts_Pols, order_Pols, verbose)  # Polar surface area
+    if 'Hyd' in nombres:
+        order, patts = smarts['Crippen']
+        valores_hyd_MR = calc._pyGetAtomContribs(mol_sinH, patts, order, verbose)  # Hydrof and MR Crippen
+        if 'Hyd' in nombres:
             for i in range(len(at)):
-                at[i].SetDoubleProp('Pols', valores_Pols[i])
-            c = 0
-            des_pols = calc.calcular(mol_sinH, 'Pols', numero,'ato')
-            fila_pls = np.append(fila_pls, des_pols)
+                at[i].SetDoubleProp('Hyd', valores_hyd_MR[i][0])
+            des_hyd = calc.calcular(mol_sinH, 'Hyd', numero,'ato')
+            fila = np.append(fila, des_hyd)
 
-        if 'Van' in nombres:
-            c = 0
+    if 'Pols' in nombres:
+        order_Pols, patts_Pols = smarts['Pols']
+        valores_Pols = calc._pyGetAtomContribs_Pol(mol_sinH, patts_Pols, order_Pols, verbose)  # Polar surface area
+        for i in range(len(at)):
+            at[i].SetDoubleProp('Pols', valores_Pols[i])
+        des_pols = calc.calcular(mol_sinH, 'Pols', numero,'ato')
+        fila = np.append(fila, des_pols)
+
+    if 'Mol' in nombres:
+        for i in range(len(at)):
+            at[i].SetDoubleProp('Mol', valores_hyd_MR[i][1])
+
+        des_mol = calc.calcular(mol_sinH, 'Mol', numero,'ato')
+        fila = np.append(fila, des_mol)
+
+    if 'Pol' in nombres:
+        order_Pol, patts_Pol = smarts['Pol']
+        valores_Pol = calc._pyGetAtomContribs_Pol(mol_sinH, patts_Pol, order_Pol, verbose)  # Polarizabilities
+        for i in range(len(at)):
+            at[i].SetDoubleProp('Pol', valores_Pol[i])
+
+        des_pol = calc.calcular(mol_sinH, 'Pol', numero,'ato')
+        fila = np.append(fila, des_pol)
+
+    if 'Van' in nombres:
+        for i in range(len(at)):
+            at[i].SetDoubleProp('Van', Chem.GetPeriodicTable().GetRvdw(at[i].GetAtomicNum()))
+
+        des_van = calc.calcular(mol_sinH, 'Van', numero,'ato')
+        fila = np.append(fila, des_van)
+
+    if 'Gas' in nombres:
+        # AllChem.ComputeGasteigerCharges(mol_sinH)
+        # stored on each atom are stored a computed property ( under the name _GasteigerCharge)
+        AllChem.ComputeGasteigerCharges(mol_ch_sinH)
+        if (np.isnan(at_ch[0].GetDoubleProp('_GasteigerCharge'))):
+            # debe haber pasado anter por la curacion con KNIME para tener el SMILES original a los P pero no a los organometálicos
+            if (mol.HasProp('Original_SMILES')):
+                mol_smi = Chem.MolFromSmiles(mol.GetProp('Original_SMILES'))
+                mol_smi_H = Chem.AddHs(mol_smi, explicitOnly=True)
+                mol_ch_sinH = Chem.RemoveHs(mol_smi_H, False, True, True)
+                AllChem.ComputeGasteigerCharges(mol_ch_sinH)
+                at_ch = mol_ch_sinH.GetAtoms()
+        for i in range(len(at)):
+            at_ch[i].SetDoubleProp('Gas', at_ch[i].GetDoubleProp('_GasteigerCharge'))
+
+        des_gas = calc.calcular(mol_ch_sinH, 'Gas', numero,'ato')
+        fila = np.append(fila, des_gas)
+
+    if 'Ato' in nombres:
+        for i in range(len(at)):
+            at[i].SetDoubleProp('Ato', at[i].GetMass())
+
+        des_ato = calc.calcular(mol_sinH, 'Ato', numero,'ato')
+        fila = np.append(fila, des_ato)
+
+    if 'Ab-R2' or 'api2' in nombres:
+        order_Ab, patts_Ab = smarts['Abraham_3']
+        valores_Ab = calc._pyGetAtomContribs_Ab2(mol_sinH, patts_Ab, order_Ab, verbose)  # Abraham properties
+        if 'Ab-R2' in nombres:
             for i in range(len(at)):
-                at[i].SetDoubleProp('Van', Chem.GetPeriodicTable().GetRvdw(at[i].GetAtomicNum()))
+                at[i].SetDoubleProp('Ab-R2', valores_Ab[i][0])
 
-            des_van = calc.calcular(mol_sinH, 'Van', numero,'ato')
-            fila_vdw = np.append(fila_vdw, des_van)
+            des = calc.calcular(mol_sinH, 'Ab-R2', numero,'ato')
+            fila = np.append(fila, des)
 
-        if 'Gas' in nombres:
-            # AllChem.ComputeGasteigerCharges(mol_sinH)
-            # stored on each atom are stored a computed property ( under the name _GasteigerCharge)
-            AllChem.ComputeGasteigerCharges(mol_ch_sinH)
-            if (np.isnan(at_ch[0].GetDoubleProp('_GasteigerCharge'))):
-                # debe haber pasado anter por la curacion con KNIME para tener el SMILES original a los P pero no a los organometálicos
-                if (mol.HasProp('Original_SMILES')):
-                    mol_smi = Chem.MolFromSmiles(mol.GetProp('Original_SMILES'))
-                    mol_smi_H = Chem.AddHs(mol_smi, explicitOnly=True)
-                    mol_ch_sinH = Chem.RemoveHs(mol_smi_H, False, True, True)
-                    AllChem.ComputeGasteigerCharges(mol_ch_sinH)
-                    at_ch = mol_ch_sinH.GetAtoms()
+        if 'Ab-pi2H' in nombres:
             for i in range(len(at)):
-                at_ch[i].SetDoubleProp('Gas', at_ch[i].GetDoubleProp('_GasteigerCharge'))
+                at[i].SetDoubleProp('Ab-pi2H', valores_Ab[i][1])
 
-            des_gas = calc.calcular(mol_ch_sinH, 'Gas', numero,'ato')
-            fila_chg = np.append(fila_chg, des_gas)
+            des = calc.calcular(mol_sinH, 'Ab-pi2H', numero,'ato')
+            fila = np.append(fila, des)
 
-        if 'Ato' in nombres:
-            c = 0
+    if 'Ab-sumA2H' in nombres:
+        order_Aba, patts_Aba = smarts['Abraham_4']
+        valores_Aba = calc._pyGetAtomContribs_Abalpha(mol_sinH, patts_Aba, order_Aba,
+                                                 verbose)  # Abraham properties alpha
+        for i in range(len(at)):
+            at[i].SetDoubleProp('Ab-sumA2H', valores_Aba[i])
+
+        des = calc.calcular(mol_sinH, 'Ab-sumA2H', numero,'ato')
+        fila = np.append(fila, des)
+
+    if 'b2h' or 'b2o' or 'l16' in nombres:
+        if 'Ab-sumB2H' in nombres:
             for i in range(len(at)):
-                at[i].SetDoubleProp('Ato', at[i].GetMass())
+                at[i].SetDoubleProp('Ab-sumB2H', valores_Ab[i][2])
 
-            des_ato = calc.calcular(mol_sinH, 'Ato', numero,'ato')
-            fila_atw = np.append(fila_atw, des_ato)
+            des = calc.calcular(mol_sinH, 'Ab-sumB2H', numero,'ato')
+            fila = np.append(fila, des)
 
-        if 'Pol' in nombres:
-            order_Pol, patts_Pol = calc._ReadPatts_Pol(os.path.join(get_script_path(),'SMARTS/Pol.txt'))
-            valores_Pol = calc._pyGetAtomContribs_Pol(mol_sinH, patts_Pol, order_Pol, verbose)  # Polarizabilities
+        if 'Ab-sumB20' in nombres:
             for i in range(len(at)):
-                at[i].SetDoubleProp('Pol', valores_Pol[i])
+                at[i].SetDoubleProp('Ab-sumB20', valores_Ab[i][3])
 
-            des_pol = calc.calcular(mol_sinH, 'Pol', numero,'ato')
-            fila_pol = np.append(fila_pol, des_pol)
+            des = calc.calcular(mol_sinH, 'Ab-sumB20', numero,'ato')
+            fila = np.append(fila, des)
 
-        if 'Ab-R2' or 'api2' or 'b2h' or 'b2o' or 'l16' in nombres:
-            order_Ab, patts_Ab = calc._ReadPatts_Ab(os.path.join(get_script_path(),'SMARTS/Abraham_3.txt'))
-            valores_Ab = calc._pyGetAtomContribs_Ab2(mol_sinH, patts_Ab, order_Ab, verbose)  # Abraham properties
-            if 'Ab-R2' in nombres:
-                for i in range(len(at)):
-                    at[i].SetDoubleProp('Ab-R2', valores_Ab[i][0])
-
-                des = calc.calcular(mol_sinH, 'Ab-R2', numero,'ato')
-                fila_ar2 = np.append(fila_ar2, des)
-
-            if 'Ab-pi2H' in nombres:
-                for i in range(len(at)):
-                    at[i].SetDoubleProp('Ab-pi2H', valores_Ab[i][1])
-
-                des = calc.calcular(mol_sinH, 'Ab-pi2H', numero,'ato')
-                fila_api2 = np.append(fila_api2, des)
-
-            if 'Ab-sumB2H' in nombres:
-                for i in range(len(at)):
-                    at[i].SetDoubleProp('Ab-sumB2H', valores_Ab[i][2])
-
-                des = calc.calcular(mol_sinH, 'Ab-sumB2H', numero,'ato')
-                fila_b2h = np.append(fila_b2h, des)
-
-            if 'Ab-sumB20' in nombres:
-                for i in range(len(at)):
-                    at[i].SetDoubleProp('Ab-sumB20', valores_Ab[i][3])
-
-                des = calc.calcular(mol_sinH, 'Ab-sumB20', numero,'ato')
-                fila_b2o = np.append(fila_b2o, des)
-
-            if 'Ab-logL16' in nombres:
-                for i in range(len(at)):
-                    at[i].SetDoubleProp('Ab-logL16', valores_Ab[i][4])
-
-                des = calc.calcular(mol_sinH, 'Ab-logL16', numero,'ato')
-                fila_l16 = np.append(fila_l16, des)
-
-        if 'Ab-sumA2H' in nombres:
-            order_Aba, patts_Aba = calc._ReadPatts_Abalpha(os.path.join(get_script_path(),'SMARTS/Abraham_4.txt'))
-            valores_Aba = calc._pyGetAtomContribs_Abalpha(mol_sinH, patts_Aba, order_Aba,
-                                                     verbose)  # Abraham properties alpha
+        if 'Ab-logL16' in nombres:
             for i in range(len(at)):
-                at[i].SetDoubleProp('Ab-sumA2H', valores_Aba[i])
+                at[i].SetDoubleProp('Ab-logL16', valores_Ab[i][4])
 
-            des = calc.calcular(mol_sinH, 'Ab-sumA2H', numero,'ato')
-            fila_a2h = np.append(fila_a2h, des)
+            des = calc.calcular(mol_sinH, 'Ab-logL16', numero,'ato')
+            fila = np.append(fila, des)
 
-        fila = np.append(fila, fila_std if len(fila_std) > 0 else [])
-        fila = np.append(fila, fila_dip if len(fila_dip) > 0 else [])
-        fila = np.append(fila, fila_dip2 if len(fila_dip2) > 0 else [])
-        fila = np.append(fila, fila_hyd if len(fila_hyd) > 0 else [])
-        fila = np.append(fila, fila_pls if len(fila_pls) > 0 else [])
-        fila = np.append(fila, fila_mr if len(fila_mr) > 0 else [])
-        fila = np.append(fila, fila_pol if len(fila_pol) > 0 else [])
-        fila = np.append(fila, fila_vdw if len(fila_vdw) > 0 else [])
-        fila = np.append(fila, fila_chg if len(fila_chg) > 0 else [])
-        fila = np.append(fila, fila_atw if len(fila_atw) > 0 else [])
-        fila = np.append(fila, fila_ar2 if len(fila_ar2) > 0 else [])
-        fila = np.append(fila, fila_api2 if len(fila_api2) > 0 else [])
-        fila = np.append(fila, fila_a2h if len(fila_a2h) > 0 else [])
-        fila = np.append(fila, fila_b2h if len(fila_b2h) > 0 else [])
-        fila = np.append(fila, fila_b2o if len(fila_b2o) > 0 else [])
-        fila = np.append(fila, fila_l16 if len(fila_l16) > 0 else [])
-        overall = np.vstack([overall, fila])
-    overall = np.delete(overall, 0, 0)
-
-    return overall
-"""
-
-def calcular_ato(moleculas, nombres, numero, verbose):
-    if verbose:
-        print('calculating descriptors...')
-
-    overall = np.zeros(numero*len(nombres)+1)
-
-    m = 0
-    for mol in moleculas:
-        m = m + 1
-        if verbose:
-            print('\tMolecula %d' % (m))
-        mol_H = Chem.AddHs(mol, explicitOnly=True)
-        mol_sinH = Chem.RemoveHs(mol_H, False, True, False)
-        mol_ch_sinH = Chem.RemoveHs(mol_H, False, True, True)
-        Chem.SanitizeMol(mol_H)
-        Chem.SanitizeMol(mol_sinH)
-        at = mol_sinH.GetAtoms()
-        bonds = mol_sinH.GetBonds()
-        at_ch = mol_ch_sinH.GetAtoms()
-        fila = np.array([])
-        fila = np.append(fila, [mol_sinH.GetNumAtoms()])
-        fila_std = np.array([])
-        fila_dip = np.array([])
-        fila_dip2 = np.array([])
-        fila_hyd = np.array([])
-        fila_mr = np.array([])
-        fila_pls = np.array([])
-        fila_vdw = np.array([])
-        fila_chg = np.array([])
-        fila_atw = np.array([])
-        fila_pol = np.array([])
-        fila_ar2 = np.array([])
-        fila_api2 = np.array([])
-        fila_b2h = np.array([])
-        fila_b2o = np.array([])
-        fila_l16 = np.array([])
-        fila_a2h = np.array([])
-
-        if 'Std' in nombres:
-            order_Std, patts_Std = calc._ReadPatts_Pol(os.path.join(get_script_path(),'SMARTS/Std.txt'))
-            valores_std = calc._pyGetContribs(mol_sinH, patts_Std, order_Std)  # Standard distances
-            c = 0
-            for enlace in bonds:
-                c = c + 1
-                enlace.SetProp('Std1', str(round(valores_std[enlace.GetIdx()], 6)))
-                at_inicial = at[enlace.GetBeginAtomIdx()]
-                at_final = at[enlace.GetEndAtomIdx()]
-                if (at_final.HasProp('Std')==0):
-                    at_final.SetDoubleProp('Std',(valores_std[enlace.GetIdx()] / (2*at_final.GetDegree())))
-                else:
-                    at_final.SetDoubleProp('Std', at_final.GetDoubleProp('Std') + (valores_std[enlace.GetIdx()] / (2*at_final.GetDegree())))
-                if (at_inicial.HasProp('Std')==0):
-                    at_inicial.SetDoubleProp('Std',(valores_std[enlace.GetIdx()] / (2*at_inicial.GetDegree())))
-                else:
-                    at_inicial.SetDoubleProp('Std', at_inicial.GetDoubleProp('Std') + (valores_std[enlace.GetIdx()] / (2*at_inicial.GetDegree())))
-
-            des_std = calc.calcular(mol_sinH, 'Std', numero,'ato')
-            fila_std = np.append(fila_std, des_std)
-
-        if 'Dip' in nombres:
-            order_Dip, patts_Dip = calc._ReadPatts_Pol(os.path.join(get_script_path(),'SMARTS/Dip.txt'))
-            valores_dip = calc._pyGetContribs(mol_sinH, patts_Dip, order_Dip)  # Dipole moments
-            c = 0
-            for enlace in bonds:
-                c = c + 1
-                enlace.SetProp('Dip1', str(round(valores_dip[enlace.GetIdx()], 6)))
-                at_inicial = at[enlace.GetBeginAtomIdx()]
-                at_final = at[enlace.GetEndAtomIdx()]
-
-                if (at_final.HasProp('Dip')==0):
-                    at_final.SetDoubleProp('Dip',(valores_std[enlace.GetIdx()] / (2*at_final.GetDegree())))
-                else:
-                    at_final.SetDoubleProp('Dip', at_final.GetDoubleProp('Dip') + (valores_std[enlace.GetIdx()] / (2*at_final.GetDegree())))
-                if (at_inicial.HasProp('Dip')==0):
-                    at_inicial.SetDoubleProp('Dip',(valores_std[enlace.GetIdx()] / (2*at_inicial.GetDegree())))
-                else:
-                    at_inicial.SetDoubleProp('Dip', at_inicial.GetDoubleProp('Dip') + (valores_std[enlace.GetIdx()] / (2*at_inicial.GetDegree())))
-
-            des_dip = calc.calcular(mol_sinH, 'Dip', numero,'ato')
-            fila_dip = np.append(fila_dip, des_dip)
-
-        if 'Dip2' in nombres:
-            valores_dip2 = calc.calcular_dipolos2(mol_sinH)  # Dipole moments2
-            c = 0
-            for enlace in bonds:
-                c = c + 1
-                enlace.SetProp('Dip21', str(round(valores_dip2[enlace.GetIdx()], 6)))
-                at_inicial = at[enlace.GetBeginAtomIdx()]
-                at_final = at[enlace.GetEndAtomIdx()]
-                if (at_final.HasProp('Dip2') == 0):
-                    at_final.SetDoubleProp('Dip2', (valores_std[enlace.GetIdx()] / (2*at_final.GetDegree())))
-                else:
-                    at_final.SetDoubleProp('Dip2', at_final.GetDoubleProp('Dip2') + (
-                                valores_std[enlace.GetIdx()] / (2*at_final.GetDegree())))
-                if (at_inicial.HasProp('Dip2') == 0):
-                    at_inicial.SetDoubleProp('Dip2', (valores_std[enlace.GetIdx()] / (2*at_inicial.GetDegree())))
-                else:
-                    at_inicial.SetDoubleProp('Dip2', at_inicial.GetDoubleProp('Dip2') + (
-                                valores_std[enlace.GetIdx()] / (2*at_inicial.GetDegree())))
-
-            des_dip2 = calc.calcular(mol_sinH, 'Dip2', numero,'ato')
-            fila_dip2 = np.append(fila_dip2, des_dip2)
-
-        if 'Hyd' or 'Mol' in nombres:
-            order, patts = calc._ReadPatts(os.path.join(get_script_path(),'SMARTS/Crippen.txt'))
-            valores_hyd_MR = calc._pyGetAtomContribs(mol_sinH, patts, order, verbose)  # Hydrof and MR Crippen
-            if 'Hyd' in nombres:
-                for i in range(len(at)):
-                    at[i].SetDoubleProp('Hyd', valores_hyd_MR[i][0])
-                des_hyd = calc.calcular(mol_sinH, 'Hyd', numero,'ato')
-                fila_hyd = np.append(fila_hyd, des_hyd)
-            if 'Mol' in nombres:
-                for i in range(len(at)):
-                    at[i].SetDoubleProp('Mol', valores_hyd_MR[i][1])
-
-                des_mol = calc.calcular(mol_sinH, 'Mol', numero,'ato')
-                fila_mr = np.append(fila_mr, des_mol)
-
-        if 'Pols' in nombres:
-            order_Pols, patts_Pols = calc._ReadPatts_Pol(os.path.join(get_script_path(),'SMARTS/Pols.txt'))
-            valores_Pols = calc._pyGetAtomContribs_Pol(mol_sinH, patts_Pols, order_Pols, verbose)  # Polar surface area
-            for i in range(len(at)):
-                at[i].SetDoubleProp('Pols', valores_Pols[i])
-            c = 0
-            des_pols = calc.calcular(mol_sinH, 'Pols', numero,'ato')
-            fila_pls = np.append(fila_pls, des_pols)
-
-        if 'Van' in nombres:
-            c = 0
-            for i in range(len(at)):
-                at[i].SetDoubleProp('Van', Chem.GetPeriodicTable().GetRvdw(at[i].GetAtomicNum()))
-
-            des_van = calc.calcular(mol_sinH, 'Van', numero,'ato')
-            fila_vdw = np.append(fila_vdw, des_van)
-
-        if 'Gas' in nombres:
-            # AllChem.ComputeGasteigerCharges(mol_sinH)
-            # stored on each atom are stored a computed property ( under the name _GasteigerCharge)
-            AllChem.ComputeGasteigerCharges(mol_ch_sinH)
-            if (np.isnan(at_ch[0].GetDoubleProp('_GasteigerCharge'))):
-                # debe haber pasado anter por la curacion con KNIME para tener el SMILES original a los P pero no a los organometálicos
-                if (mol.HasProp('Original_SMILES')):
-                    mol_smi = Chem.MolFromSmiles(mol.GetProp('Original_SMILES'))
-                    mol_smi_H = Chem.AddHs(mol_smi, explicitOnly=True)
-                    mol_ch_sinH = Chem.RemoveHs(mol_smi_H, False, True, True)
-                    AllChem.ComputeGasteigerCharges(mol_ch_sinH)
-                    at_ch = mol_ch_sinH.GetAtoms()
-            for i in range(len(at)):
-                at_ch[i].SetDoubleProp('Gas', at_ch[i].GetDoubleProp('_GasteigerCharge'))
-
-            des_gas = calc.calcular(mol_ch_sinH, 'Gas', numero,'ato')
-            fila_chg = np.append(fila_chg, des_gas)
-
-        if 'Ato' in nombres:
-            c = 0
-            for i in range(len(at)):
-                at[i].SetDoubleProp('Ato', at[i].GetMass())
-
-            des_ato = calc.calcular(mol_sinH, 'Ato', numero,'ato')
-            fila_atw = np.append(fila_atw, des_ato)
-
-        if 'Pol' in nombres:
-            order_Pol, patts_Pol = calc._ReadPatts_Pol(os.path.join(get_script_path(),'SMARTS/Pol.txt'))
-            valores_Pol = calc._pyGetAtomContribs_Pol(mol_sinH, patts_Pol, order_Pol, verbose)  # Polarizabilities
-            for i in range(len(at)):
-                at[i].SetDoubleProp('Pol', valores_Pol[i])
-
-            des_pol = calc.calcular(mol_sinH, 'Pol', numero,'ato')
-            fila_pol = np.append(fila_pol, des_pol)
-
-        if 'Ab-R2' or 'api2' or 'b2h' or 'b2o' or 'l16' in nombres:
-            order_Ab, patts_Ab = calc._ReadPatts_Ab(os.path.join(get_script_path(),'SMARTS/Abraham_3.txt'))
-            valores_Ab = calc._pyGetAtomContribs_Ab2(mol_sinH, patts_Ab, order_Ab, verbose)  # Abraham properties
-            if 'Ab-R2' in nombres:
-                for i in range(len(at)):
-                    at[i].SetDoubleProp('Ab-R2', valores_Ab[i][0])
-
-                des = calc.calcular(mol_sinH, 'Ab-R2', numero,'ato')
-                fila_ar2 = np.append(fila_ar2, des)
-
-            if 'Ab-pi2H' in nombres:
-                for i in range(len(at)):
-                    at[i].SetDoubleProp('Ab-pi2H', valores_Ab[i][1])
-
-                des = calc.calcular(mol_sinH, 'Ab-pi2H', numero,'ato')
-                fila_api2 = np.append(fila_api2, des)
-
-            if 'Ab-sumB2H' in nombres:
-                for i in range(len(at)):
-                    at[i].SetDoubleProp('Ab-sumB2H', valores_Ab[i][2])
-
-                des = calc.calcular(mol_sinH, 'Ab-sumB2H', numero,'ato')
-                fila_b2h = np.append(fila_b2h, des)
-
-            if 'Ab-sumB20' in nombres:
-                for i in range(len(at)):
-                    at[i].SetDoubleProp('Ab-sumB20', valores_Ab[i][3])
-
-                des = calc.calcular(mol_sinH, 'Ab-sumB20', numero,'ato')
-                fila_b2o = np.append(fila_b2o, des)
-
-            if 'Ab-logL16' in nombres:
-                for i in range(len(at)):
-                    at[i].SetDoubleProp('Ab-logL16', valores_Ab[i][4])
-
-                des = calc.calcular(mol_sinH, 'Ab-logL16', numero,'ato')
-                fila_l16 = np.append(fila_l16, des)
-
-        if 'Ab-sumA2H' in nombres:
-            order_Aba, patts_Aba = calc._ReadPatts_Abalpha(os.path.join(get_script_path(),'SMARTS/Abraham_4.txt'))
-            valores_Aba = calc._pyGetAtomContribs_Abalpha(mol_sinH, patts_Aba, order_Aba,
-                                                     verbose)  # Abraham properties alpha
-            for i in range(len(at)):
-                at[i].SetDoubleProp('Ab-sumA2H', valores_Aba[i])
-
-            des = calc.calcular(mol_sinH, 'Ab-sumA2H', numero,'ato')
-            fila_a2h = np.append(fila_a2h, des)
-
-        fila = np.append(fila, fila_std if len(fila_std) > 0 else [])
-        fila = np.append(fila, fila_dip if len(fila_dip) > 0 else [])
-        fila = np.append(fila, fila_dip2 if len(fila_dip2) > 0 else [])
-        fila = np.append(fila, fila_hyd if len(fila_hyd) > 0 else [])
-        fila = np.append(fila, fila_pls if len(fila_pls) > 0 else [])
-        fila = np.append(fila, fila_mr if len(fila_mr) > 0 else [])
-        fila = np.append(fila, fila_pol if len(fila_pol) > 0 else [])
-        fila = np.append(fila, fila_vdw if len(fila_vdw) > 0 else [])
-        fila = np.append(fila, fila_chg if len(fila_chg) > 0 else [])
-        fila = np.append(fila, fila_atw if len(fila_atw) > 0 else [])
-        fila = np.append(fila, fila_ar2 if len(fila_ar2) > 0 else [])
-        fila = np.append(fila, fila_api2 if len(fila_api2) > 0 else [])
-        fila = np.append(fila, fila_a2h if len(fila_a2h) > 0 else [])
-        fila = np.append(fila, fila_b2h if len(fila_b2h) > 0 else [])
-        fila = np.append(fila, fila_b2o if len(fila_b2o) > 0 else [])
-        fila = np.append(fila, fila_l16 if len(fila_l16) > 0 else [])
-        overall = np.vstack([overall, fila])
+    overall = np.vstack([overall, fila])
     overall = np.delete(overall, 0, 0)
 
     return overall
 
 def calcular_bond(moleculas, nombres, numero, verbose):
-    if verbose:
+    if verbose == 1:
         print('calculating descriptors...')
     overall = np.array([])
     overall = np.append(overall, [0])
@@ -520,7 +257,7 @@ def calcular_bond(moleculas, nombres, numero, verbose):
     m = 0
     for mol in moleculas:
         m = m + 1
-        if verbose:
+        if verbose == 1:
             print('\tMolecula %d' % (m))
         mol_H = Chem.AddHs(mol, explicitOnly=True)
         mol_sinH = Chem.RemoveHs(mol_H, False, True, False)
@@ -793,15 +530,17 @@ def calcular_bond(moleculas, nombres, numero, verbose):
         fila = np.append(fila, fila_b2o if len(fila_b2o) > 0 else [])
         fila = np.append(fila, fila_l16 if len(fila_l16) > 0 else [])
         overall = np.vstack([overall, fila])
+
     overall = np.delete(overall, 0, 0)
     return overall
 
 def main_params(in_fname, out_fname,des_names,des_type, numero, id_field_set, activity_field_set, verbose):
 
     moleculas = Chem.SDMolSupplier(in_fname, False, False, False)
+
+    # setup path and create working directory
     archivo = os.path.split(os.path.abspath(in_fname))
-    path = os.path.dirname(os.path.abspath(in_fname))#+'/'
-    path = os.path.join(path, os.path.join("TOPSMODE"+archivo[1].split(".")[0]), "descriptores_"+des_type)
+    path = os.path.join(archivo[0], os.path.join("TOPSMODE"+archivo[1].split(".")[0]), "descriptores_"+des_type)
 
     if not os.path.exists(path):
         os.makedirs(path)
@@ -809,58 +548,57 @@ def main_params(in_fname, out_fname,des_names,des_type, numero, id_field_set, ac
     else:
         print("Directory ", path, " already exists")
 
-    titulo = ['mol'] # FIXME: para que sirve?
-    if activity_field_set is not None and activity_field_set != '':
+    # build array with column names
+    titulo = ['mol']
+    if activity_field_set is not None and len(activity_field_set) > 0:
         titulo.append(activity_field_set)
-
     titulo.append(get_suffix(des_type))
 
-    # FIXME: para que sirve?
+    prefix = 'uato' if des_type == 'ato' else 'u'
     for n in des_names:
         for i in range(1, numero + 1):
-            if des_type == 'ato':
-                a = 'uato(' + n + ')' + str(i)
-            else:
-                a = 'u(' + n + ')' + str(i)
+            a = prefix + '(' + n + ')' + str(i)
             titulo.append(a)
 
-    nombres = np.array([])
+    # load the content of the SMARTS files into memory
+    load_smarts()
+
+    # build data matrix
     id = 1
+    nombres = np.array([])
     act = np.array([])
-    get_title = True if id_field_set == 'title' else False
+    descriptores = np.array([])
 
     for mol in moleculas:
-        tmp = ""
-        if id_field_set == 'title':
-            tmp = mol.GetProp('_Name')
-            if tmp == "":
-                tmp = 'MolID_' + str(id)
-                id += 1
-        elif id_field_set == 'gen' or id_field_set is None:
-            tmp = 'MolID_' + str(id)
-            id += 1
+        # get the molecule's name and save it for later
+        tmp, id = get_molname(mol, id_field_set, id)
+        nombres = np.append(nombres, tmp)
 
+        # save activity
         if activity_field_set is not None and activity_field_set != '':
             act = np.vstack([act, mol.GetProp(activity_field_set)])
 
-        if (len(nombres) == 0):
-            nombres = tmp
+        # calculate descriptors and store the results in an array
+        if des_type == 'ato':
+            aux = calcular_ato(mol, des_names, numero, verbose)
         else:
-            nombres = np.vstack([nombres, tmp])
+            aux = calcular_bond(mol, des_names, numero, verbose) # TODO
 
-    if des_type == 'ato':
-        descriptores = calcular_ato(moleculas, des_names, numero, verbose)
-    else:
-        descriptores = calcular_bond(moleculas, des_names, numero, verbose)
+        if len(descriptores) == 0:
+            descriptores = aux
+        else:
+            descriptores = np.vstack((descriptores, aux))
 
-    # FIXME: para que es?
+    # FIXME: para que es -> Nombre de las moleculas
     if activity_field_set is not None:
         nombres = np.append(nombres, act, axis=1)
 
-    descriptores = np.append(nombres, descriptores, axis=1)
-    descriptores = np.vstack((titulo, descriptores))
-    df = pd.DataFrame(data=descriptores)
-    df.to_csv(os.path.join(path, out_fname), index=False, header=False, sep=';')
+    nombres = nombres.reshape(len(nombres), 1)
+    descriptores = np.hstack((nombres, descriptores))
+
+    # transform into dataframe and export
+    df = pd.DataFrame(data=descriptores, columns=titulo)
+    df.to_csv(os.path.join(path, out_fname), index=False, sep=';')
 
 def main():
 
@@ -887,16 +625,15 @@ def main():
                         help='Integer value. 0 - print no details. 1 and more - verbose output. Default: 0.')
 
     args = vars(parser.parse_args())
-    opt_mix_ordered = None
-    for o, v in args.items():
-        if o == "in": in_fname = v
-        if o == "out": out_fname = v
-        if o == "descriptors": des_names = v
-        if o == "des_type": des_type = v
-        if o == "num_des": numero = int(v)
-        if o == "id_field_set": id_field_set = v
-        if o == "field_activity": activity_field_set = v
-        if o == "verbose": verbose = int(v)
+    in_fname = args['in']
+    out_fname = args['out']
+    des_names = args['descriptors']
+    des_type = args['des_type']
+    numero = args['num_des']
+    id_field_set = args['id_field_set']
+    activity_field_set = args['field_activity']
+    verbose = args['verbose']
+
     main_params(in_fname, out_fname, des_names, des_type, numero, id_field_set, activity_field_set, verbose)
 
 
