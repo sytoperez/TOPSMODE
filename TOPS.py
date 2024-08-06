@@ -565,7 +565,7 @@ def main_params(in_fname, out_fname,des_names,des_type, numero, id_field_set, ac
         print("Directory ", path, " already exists")
 
     titulo = ['mol']
-    if activity_field_set is not None or activity_field_set != '':
+    if activity_field_set is not None and activity_field_set != '':
         titulo.append(activity_field_set)
     if des_type == 'ato':
         titulo.append('uato0')
@@ -593,7 +593,7 @@ def main_params(in_fname, out_fname,des_names,des_type, numero, id_field_set, ac
         elif id_field_set == 'gen' or id_field_set is None:
             tmp = 'MolID_' + str(id)
             id += 1
-        if activity_field_set is not None or activity_field_set != '':
+        if activity_field_set is not None and activity_field_set != '':
             tmp2 = mol.GetProp(activity_field_set)
             if(len(act)==0):
                 act = tmp2
@@ -639,7 +639,7 @@ def main():
     parser.add_argument('-w', '--id_field_set', metavar='field_set', default='gen',
                        help='name of unique ID for compounds (sdf). gen - auto-generated names and titles - sdf titles will be used'
                             'If omitted for sdf molecule titles will be used or auto-generated names; ')
-    parser.add_argument('-a', '--field_activity', metavar='activity_field_set', default='none',
+    parser.add_argument('-a', '--field_activity', metavar='activity_field_set', default=None,
                         help='name of field with activity values for compounds (sdf). none - activity values is ommited')
     parser.add_argument('-v', '--verbose', default=0,
                         help='Integer value. 0 - print no details. 1 and more - verbose output. Default: 0.')
@@ -651,7 +651,7 @@ def main():
         if o == "out": out_fname = v
         if o == "descriptors": des_names = v
         if o == "des_type": des_type = v
-        if o == "numero": numero = int(v)
+        if o == "num_des": numero = int(v)
         if o == "id_field_set": id_field_set = v
         if o == "field_activity": activity_field_set = v
         if o == "verbose": verbose = int(v)
