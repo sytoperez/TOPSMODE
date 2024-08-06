@@ -245,30 +245,41 @@ def _pyGetAtomContribs_Ab(mol, patts=None, order=None, verbose=0):
 
 def eliminar_duplicados(b):
     my_list = list(b)
-    para_borrar=[0]*len(b)
-    for i in range(len(b) - 1):
-        for j in range(i+1, len(b)):
-            if sorted(b[i]) == sorted(b[j]):
-                para_borrar[j]=1
-    for i in range(len(para_borrar) - 1, 0, -1):
-        if para_borrar[i] == 1:
-            my_list.pop(i)
-    b = tuple(my_list)
+    resultado = []
+    vistas = set()
+
+    for tupla in my_list:
+        # Ordena los elementos de la tupla para tratar todas las permutaciones como iguales
+        tupla_ordenada = tuple(sorted(tupla))
+        # Solo agrega al resultado si no se ha visto antes
+        if tupla_ordenada not in vistas:
+            vistas.add(tupla_ordenada)
+            resultado.append(tupla)
+
+    b = tuple(resultado)
     return b
 
 
 def eliminar_1_2_iguales(b):
+    # Convertir a lista para manipulación
     my_list = list(b)
-    para_borrar=[0]*len(b)
-    for i in range(len(b)-1):
-        for j in range(i+1, len(b)):
-            if (b[i][0] == b[j][0] or b[i][0] == b[j][len(b[j])-1]) and (b[i][len(b[i])-1] == b[j][0] or b[i][len(b[i])-1] == b[j][len(b[j])-1]):
-                para_borrar[j]=1
-    for i in range(len(para_borrar) - 1, 0, -1):
-        if para_borrar[i] == 1:
-            my_list.pop(i)
-    b = tuple(my_list)
-    return b
+    
+    # Conjunto para almacenar las tuplas vistas
+    vistas = set()
+    
+    # Lista para el resultado
+    resultado = []
+    
+    for tupla in my_list:
+        # Crear una representación ordenada de los dos elementos relevantes (primero y último)
+        representacion = (min(tupla[0], tupla[-1]), max(tupla[0], tupla[-1]))
+        
+        if representacion not in vistas:
+            vistas.add(representacion)
+            resultado.append(tupla)
+    
+    # Convertir de nuevo a tupla para el resultado final
+    return tuple(resultado)
 
 
 def _pyGetAtomContribs_Ab2(mol, patts = None, order = None, verbose=0):
@@ -533,33 +544,41 @@ def _pyGetAtomContribs_Pol(mol, patts=None, order=None, verbose=0):
         if done: break
     return atomContribs
 
-
+"""
 def suma(matriz):
     salida = 0
     for i in range(len(matriz)):
         salida = salida+matriz[i, i]
     return salida
-
+"""
 
 def calcular_dipolos2(mol):
-    enlaces = mol.GetBonds()
+    lista_atomos = ['F','Cl','Br','C','O','N','S']
+    #enlaces = mol.GetBonds()
     contrib = [0.]*mol.GetNumBonds()
+
+    enlaces = list(filter(lambda x: (x.GetBeginAtom().GetSymbol() in lista_atomos or x.GetEndAtom().GetSymbol() in lista_atomos), mol.GetBonds()))
+
     for enlace in enlaces:
         atomo1 = enlace.GetBeginAtom()
         atomo2 = enlace.GetEndAtom()
+
+        #if atomo1.GetSymbol() not in atomos_interes and atomo2.GetSymbol() not in atomos_interes:
+        #  continue
+
         if atomo1.GetSymbol() == 'F' or atomo2.GetSymbol() == 'F':
             contrib[enlace.GetIdx()] = 1.39
         if atomo1.GetSymbol() == 'Cl' or atomo2.GetSymbol() == 'Cl':
             contrib[enlace.GetIdx()] = 1.47
         if atomo1.GetSymbol() == 'Br' or atomo2.GetSymbol() == 'Br':
             contrib[enlace.GetIdx()] = 1.42
+        
         if atomo1.GetSymbol() == 'C' or atomo2.GetSymbol() == 'C':
             if atomo1.GetSymbol() == 'O' or atomo2.GetSymbol() == 'O':
                 if enlace.GetBondTypeAsDouble() == 2 or enlace.GetBondTypeAsDouble() == 1.5:
                     contrib[enlace.GetIdx()] = 2.40
                 else:
                     contrib[enlace.GetIdx()] = 0.70
-        if atomo1.GetSymbol() == 'C' or atomo2.GetSymbol() == 'C':
             if atomo1.GetSymbol() == 'N' or atomo2.GetSymbol() == 'N':
                 if enlace.GetBondTypeAsDouble() == 2 or enlace.GetBondTypeAsDouble() == 1.5:
                     contrib[enlace.GetIdx()] = 1.40
@@ -567,14 +586,15 @@ def calcular_dipolos2(mol):
                     contrib[enlace.GetIdx()] = 3.10
                 else:
                     contrib[enlace.GetIdx()] = 0.45
-        if atomo1.GetSymbol() == 'C' or atomo2.GetSymbol() == 'C':
             if atomo1.GetSymbol() == 'S' or atomo2.GetSymbol() == 'S':
                 if enlace.GetBondTypeAsDouble() == 2:
                     contrib[enlace.GetIdx()] = 2.00
                 else:
                     contrib[enlace.GetIdx()] = 0.80
+
     return contrib
 
+"""
 def extraer_valores(mol, property):
     num = mol.GetNumBonds()
     c = 0
@@ -586,7 +606,7 @@ def extraer_valores(mol, property):
             p = p + enlace.GetProp(property) + ", "
         c = c + 1
     return p
-
+"""
 def calcular(mol, prop, n, tipo):
     c = 0
     if tipo == 'bond':
@@ -618,11 +638,19 @@ def adj_enlace(mol):
     c = mol.GetNumBonds()
     matriz = np.zeros((c, c))
     enlaces = mol.GetBonds()
+
+    # Crear una lista de conjuntos que representan los índices de átomos para cada enlace
+    atom_pairs = []
+    for bond in enlaces:
+        begin_idx = bond.GetBeginAtomIdx()
+        end_idx = bond.GetEndAtomIdx()
+        atom_pairs.append({begin_idx, end_idx})
+
+    # Rellenar la matriz de adyacencia
     for i in range(c):
-        for j in range(i+1, c):
-            if enlaces[i].GetBeginAtomIdx() == enlaces[j].GetBeginAtomIdx() or enlaces[i].GetBeginAtomIdx() == enlaces[
-                j].GetEndAtomIdx() or enlaces[i].GetEndAtomIdx() == enlaces[j].GetBeginAtomIdx() or enlaces[
-                i].GetEndAtomIdx() == enlaces[j].GetEndAtomIdx():
+        for j in range(i + 1, c):
+            if atom_pairs[i] & atom_pairs[j]:  # Si hay algún átomo en común
                 matriz[i, j] = 1
                 matriz[j, i] = 1
+    
     return matriz
