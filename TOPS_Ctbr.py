@@ -351,16 +351,14 @@ def calcular_ato(moleculas, variables, coeff, names, linear_set, verbose):
 
 def calcular_bond(moleculas, variables, coeff, names, linear_set, verbose):
     print('calculating contributions...')
-    m = 0
-    titulo = ["molecule", "bond"]
-    var = [p for p in variables]
-    titulo = np.append(titulo, var)
-    titulo = np.append(titulo, 'total')
+
+    titulo = ["molecule", "bond"] + [p for p in variables] + ["total"]    
     tabla_final = np.array([])
-    for mol in moleculas:
-        m = m + 1
+
+    for m, mol in enumerate(moleculas, start=1):
         if verbose:
             print('\tMolecula %d' % (m))
+
         mol_H = Chem.AddHs(mol, explicitOnly=True)
         mol_sinH = Chem.RemoveHs(mol_H, False, True, False)
         mol_ch_sinH = Chem.RemoveHs(mol_H, False, True, True)
@@ -371,18 +369,19 @@ def calcular_bond(moleculas, variables, coeff, names, linear_set, verbose):
         at_ch = mol_ch_sinH.GetAtoms()
         bonds_ch = mol_ch_sinH.GetBonds()
         nombres = variables.keys()
+
         if 'solo' in nombres:
             for enlace in bonds:
                 enlace.SetProp('solo', str(1))
 
         if 'Std' in nombres:
-            order_Std, patts_Std = calc._ReadPatts_Pol(os.path.join(get_script_path(),'SMARTS/Std.txt'))
+            order_Std, patts_Std = smarts['Std']
             valores_std = calc._pyGetContribs(mol_sinH, patts_Std, order_Std)  # Standard distances
             for enlace in bonds:
                 enlace.SetProp('Std1', str(round(valores_std[enlace.GetIdx()], 6)))
 
         if 'Dip' in nombres:
-            order_Dip, patts_Dip = calc._ReadPatts_Pol(os.path.join(get_script_path(),'SMARTS/Dip.txt'))
+            order_Dip, patts_Dip = smarts['Dip']
             valores_dip = calc._pyGetContribs(mol_sinH, patts_Dip, order_Dip)  # Dipole moments
             for enlace in bonds:
                 enlace.SetProp('Dip1', str(round(valores_dip[enlace.GetIdx()], 6)))
@@ -393,7 +392,7 @@ def calcular_bond(moleculas, variables, coeff, names, linear_set, verbose):
                 enlace.SetProp('Dip21', str(round(valores_dip2[enlace.GetIdx()], 6)))
 
         if 'Hyd' or 'Mol' in nombres:
-            order, patts = calc._ReadPatts(os.path.join(get_script_path(),'SMARTS/Crippen.txt'))
+            order, patts = smarts['Crippen']
             valores_hyd_MR = calc._pyGetAtomContribs(mol_sinH, patts, order, verbose)  # Hydrof and MR Crippen
             if 'Hyd' in nombres:
                 for i in range(len(at)):
@@ -418,7 +417,7 @@ def calcular_bond(moleculas, variables, coeff, names, linear_set, verbose):
 
 
         if 'Pols' in nombres:
-            order_Pols, patts_Pols = calc._ReadPatts_Pol(os.path.join(get_script_path(),'SMARTS/Pols.txt'))
+            order_Pols, patts_Pols = smarts['Pols']
             valores_Pols = calc._pyGetAtomContribs_Pol(mol_sinH, patts_Pols, order_Pols, verbose)  # Polar surface area
             for i in range(len(at)):
                 at[i].SetDoubleProp('Pols', valores_Pols[i])
@@ -463,7 +462,7 @@ def calcular_bond(moleculas, variables, coeff, names, linear_set, verbose):
                 enlace.SetProp('Ato1', str(round(valor_mass, 6)))
 
         if 'Pol' in nombres:
-            order_Pol, patts_Pol = calc._ReadPatts_Pol(os.path.join(get_script_path(),'SMARTS/Pol.txt'))
+            order_Pol, patts_Pol = smarts['Pol']
             valores_Pol = calc._pyGetAtomContribs_Pol(mol_sinH, patts_Pol, order_Pol, verbose)  # Polarizabilities
             for i in range(len(at)):
                 at[i].SetDoubleProp('Pol', valores_Pol[i])
@@ -475,7 +474,7 @@ def calcular_bond(moleculas, variables, coeff, names, linear_set, verbose):
                 enlace.SetProp('Pol1', str(round(valor_Pol, 6)))
 
         if 'Ab-R2' or 'Ab-pi2H' or 'Ab-sumB2H' or 'Ab-sumB20' or 'Ab-logL16' in nombres:
-            order_Ab, patts_Ab = calc._ReadPatts_Ab(os.path.join(get_script_path(),'SMARTS/Abraham_3.txt'))
+            order_Ab, patts_Ab = smarts['Abraham_3']
             valores_Ab = calc._pyGetAtomContribs_Ab2(mol_sinH, patts_Ab, order_Ab, verbose)  # Abraham properties
             if 'Ab-R2' in nombres:
                 for i in range(len(at)):
@@ -528,7 +527,7 @@ def calcular_bond(moleculas, variables, coeff, names, linear_set, verbose):
                     enlace.SetProp('Ab-logL161', str(round(valor, 6)))
 
         if 'Ab-sumA2H' in nombres:
-            order_Aba, patts_Aba = calc._ReadPatts_Abalpha(os.path.join(get_script_path(),'SMARTS/Abraham_4.txt'))
+            order_Aba, patts_Aba = smarts['Abraham_4']
             valores_Aba = calc._pyGetAtomContribs_Abalpha(mol_sinH, patts_Aba, order_Aba, verbose)  # Abraham properties alpha
             for i in range(len(at)):
                 at[i].SetDoubleProp('Ab-sumA2H', valores_Aba[i])
@@ -538,44 +537,45 @@ def calcular_bond(moleculas, variables, coeff, names, linear_set, verbose):
                 valor = (at_inicial.GetDoubleProp('Ab-sumA2H') / at_inicial.GetDegree()) + (
                         at_final.GetDoubleProp('Ab-sumA2H') / at_final.GetDegree())
                 enlace.SetProp('Ab-sumA2H1', str(round(valor, 6)))
+
         c = 0
-        n = names[m-1]
-        columna1 = [str(n) for i in range(1, mol_sinH.GetNumBonds() + 1)]
-        columna2 = [i for i in range(1, mol_sinH.GetNumBonds() + 1)]
-        tabla = np.insert(np.array([columna1]).T, 1, columna2, axis=1)
-        #tabla.astype(float)
-        #print(coeff[c])
+        n = names[m - 1]
+        columna1 = [str(n)]*mol_sinH.GetNumBonds()
+        columna2 = list(range(1, mol_sinH.GetNumBonds()+1))
+        tabla = np.column_stack((columna1, columna2))
+
         if linear_set=='lin':
-            total = [float(coeff[c])/mol_sinH.GetNumBonds() for i in range(1, mol_sinH.GetNumBonds() + 1)]
+            total = np.array([float(coeff[c]) / mol_sinH.GetNumBonds()]*mol_sinH.GetNumBonds())
         else:
-            total = [0 for i in range(1, mol_sinH.GetNumBonds() + 1)]
-        c+=1
+            total = np.zeros(mol_sinH.GetNumBonds())
+
+        c += 1
         for p in variables:
-            #he = [p]
-            inter = [0 for i in range(1, mol_sinH.GetNumBonds() + 1)]
+            inter = np.zeros(mol_sinH.GetNumBonds(), dtype=np.int8)
             for idx in variables[p]:
                 if p == 'Gas':
                     valores = extraer_ctrb(mol_ch_sinH, p, idx, 'bond')
                 elif p == 'solo':
-                    valores = np.array([1 for i in range(1, mol_sinH.GetNumBonds() + 1)])
+                    valores = np.ones(mol_sinH.GetNumBonds(), dtype=np.int8)
                 else:
                     valores = extraer_ctrb(mol_sinH, p, idx, 'bond')
                 #if sum(valores)!=0:
                 #    valores = valores / sum(valores) # ver si incluimos standarizacion o os coeff sin std
-                v2 = valores*float(coeff[c])
-                #print(coeff[c])
+
+                v2 = valores * float(coeff[c])
                 v2.astype(float)
-                inter = [sum(x) for x in zip(v2, inter)]
-                #tabla = np.hstack((tabla, np.atleast_2d(v2).T))
-                total = [sum(x) for x in zip(v2, total)]
+                inter = inter + v2
+                total = total + v2
                 c += 1
+
             tabla = np.hstack((tabla, np.atleast_2d(inter).T))
         tabla = np.hstack((tabla, np.atleast_2d(total).T))
-        #tabla = np.insert(tabla, len(tabla[0]), total, axis=1)
-        if len(tabla_final)==0:
-            tabla_final =tabla
+
+        if len(tabla_final) == 0:
+            tabla_final = tabla
         else:
             tabla_final = np.vstack((tabla_final, tabla))
+
     tabla_final = np.vstack((titulo, tabla_final))
     return tabla_final
 
@@ -610,6 +610,7 @@ def main_params(in_fname, in_model, out_fname, id_field_set, type_set, linear_se
     archivo = os.path.split(os.path.abspath(in_fname))
     path = os.path.dirname(os.path.abspath(in_fname)) #+'/'
 
+    """
     if (type_set == 'bond'):
         path = os.path.join(
             path, 
@@ -626,6 +627,14 @@ def main_params(in_fname, in_model, out_fname, id_field_set, type_set, linear_se
             in_fname.rsplit('/', 1)[1].rsplit(".", 1)[0], 
             in_model.rsplit('/', 1)[1].rsplit(".", 1)[0]
         )
+    """
+    path = os.path.join(
+        path, 
+        "TOPSMODE" + archivo[1].split(".")[0], 
+        "Contr_" + type_set, 
+        in_fname.rsplit('/', 1)[1].rsplit(".", 1)[0], 
+        in_model.rsplit('/', 1)[1].rsplit(".", 1)[0]
+    )
 
     # iterate over the models to process it
     variables = []
@@ -710,7 +719,9 @@ def main_params(in_fname, in_model, out_fname, id_field_set, type_set, linear_se
         # FIXME: esto no debería estar fuera del if? si la carpeta existe no se recalcula el sumatorio
 
         # remove useless columns for the summary
-        to_delete = ['nombre']
+        to_delete = []
+        if 'nombre' in totales.columns:
+            to_delete.append('nombre')
         if 'solo' in totales.columns:
             to_delete.append('solo')
         totales = totales.drop(to_delete, axis=1)
