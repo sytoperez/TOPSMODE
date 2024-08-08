@@ -18,8 +18,35 @@ import csv
 from numpy import genfromtxt
 import pandas as pd
 import Calculadora as calc
+
 numero = 15
 path = ""
+smarts = {}
+
+def load_smarts():
+    smarts['Abraham_3'] = calc._ReadPatts_Ab(os.path.join(get_script_path(),'SMARTS/Abraham_3.txt'))
+    smarts['Abraham_4'] = calc._ReadPatts_Abalpha(os.path.join(get_script_path(),'SMARTS/Abraham_4.txt'))
+    smarts['Crippen'] = calc._ReadPatts(os.path.join(get_script_path(),'SMARTS/Crippen.txt'))
+    smarts['Dip'] = calc._ReadPatts_Pol(os.path.join(get_script_path(),'SMARTS/Dip.txt'))
+    smarts['Pols'] = calc._ReadPatts_Pol(os.path.join(get_script_path(),'SMARTS/Pols.txt'))
+    smarts['Pol'] = calc._ReadPatts_Pol(os.path.join(get_script_path(),'SMARTS/Pol.txt'))
+    smarts['Std'] = calc._ReadPatts_Pol(os.path.join(get_script_path(),'SMARTS/Std.txt'))
+
+def get_molname(mol, id_field_set, id):
+    tmp = ""
+    if id_field_set == 'title':
+        tmp = mol.GetProp('_Name')
+    elif id_field_set == 'gen' or id_field_set is None:
+        tmp = 'MolID_' + str(id)
+        id += 1
+    return tmp, id
+
+def create_dir(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+        print("Directory ", path, " Created ")
+    else:
+        print("Directory ", path, " already exists")
 
 def get_script_path():
     return os.path.abspath(os.path.dirname(__file__))
@@ -160,7 +187,7 @@ def calcular_ato(moleculas,variables, coeff, names, linear_set, verbose):
                 at[i].SetDoubleProp('solo', 1)
 
         if 'Std' in nombres:
-            order_Std, patts_Std = calc._ReadPatts_Pol(os.path.join(get_script_path(),'SMARTS/Std.txt'))
+            order_Std, patts_Std = smarts['Std']
             valores_std = calc._pyGetContribs(mol_sinH, patts_Std, order_Std)  # Standard distances
             for enlace in bonds:
                 enlace.SetProp('Std1', str(round(valores_std[enlace.GetIdx()], 6)))
@@ -178,7 +205,7 @@ def calcular_ato(moleculas,variables, coeff, names, linear_set, verbose):
                                 valores_std[enlace.GetIdx()] / at_inicial.GetDegree()))
                 
         if 'Dip' in nombres:
-            order_Dip, patts_Dip = calc._ReadPatts_Pol(os.path.join(get_script_path(),'SMARTS/Dip.txt'))
+            order_Dip, patts_Dip = smarts['Dip']
             valores_dip = calc._pyGetContribs(mol_sinH, patts_Dip, order_Dip)  # Dipole moments
             for enlace in bonds:
                 enlace.SetProp('Dip1', str(round(valores_dip[enlace.GetIdx()], 6)))
@@ -211,7 +238,7 @@ def calcular_ato(moleculas,variables, coeff, names, linear_set, verbose):
                     at_inicial.SetDoubleProp('Dip2', at_inicial.GetDoubleProp('Dip2') + (
                             valores_dip2[enlace.GetIdx()] / at_inicial.GetDegree()))
         if 'Hyd' or 'Mol' in nombres:
-            order, patts = calc._ReadPatts(os.path.join(get_script_path(),'SMARTS/Crippen.txt'))
+            order, patts = smarts['Crippen']
             valores_hyd_MR = calc._pyGetAtomContribs(mol_sinH, patts, order, verbose)  # Hydrof and MR Crippen
             if 'Hyd' in nombres:
                 for i in range(len(at)):
@@ -222,7 +249,7 @@ def calcular_ato(moleculas,variables, coeff, names, linear_set, verbose):
                     at[i].SetDoubleProp('Mol', valores_hyd_MR[i][1])
                     
         if 'Pols' in nombres:
-            order_Pols, patts_Pols = calc._ReadPatts_Pol(os.path.join(get_script_path(),'SMARTS/Pols.txt'))
+            order_Pols, patts_Pols = smarts['Pols']
             valores_Pols = calc._pyGetAtomContribs_Pol(mol_sinH, patts_Pols, order_Pols, verbose)  # Polar surface area
             for i in range(len(at)):
                 at[i].SetDoubleProp('Pols', valores_Pols[i])
@@ -252,13 +279,13 @@ def calcular_ato(moleculas,variables, coeff, names, linear_set, verbose):
                 at[i].SetDoubleProp('Ato', at[i].GetMass())
 
         if 'Pol' in nombres:
-            order_Pol, patts_Pol = calc._ReadPatts_Pol(os.path.join(get_script_path(),'SMARTS/Pol.txt'))
+            order_Pol, patts_Pol = smarts['Pol']
             valores_Pol = calc._pyGetAtomContribs_Pol(mol_sinH, patts_Pol, order_Pol, verbose)  # Polarizabilities
             for i in range(len(at)):
                 at[i].SetDoubleProp('Pol', valores_Pol[i])
 
         if 'Ab-R2' or 'api2' or 'b2h' or 'b2o' or 'l16' in nombres:
-            order_Ab, patts_Ab = calc._ReadPatts_Ab(os.path.join(get_script_path(),'SMARTS/Abraham_3.txt'))
+            order_Ab, patts_Ab = smarts['Abraham_3']
             valores_Ab = calc._pyGetAtomContribs_Ab2(mol_sinH, patts_Ab, order_Ab, verbose)  # Abraham properties
             if 'Ab-R2' in nombres:
                 for i in range(len(at)):
@@ -281,7 +308,7 @@ def calcular_ato(moleculas,variables, coeff, names, linear_set, verbose):
                     at[i].SetDoubleProp('Ab-logL16', valores_Ab[i][4])
 
         if 'Ab-sumA2H' in nombres:
-            order_Aba, patts_Aba = calc._ReadPatts_Abalpha(os.path.join(get_script_path(),'SMARTS/Abraham_4.txt'))
+            order_Aba, patts_Aba = smarts['Abraham_4']
             valores_Aba = calc._pyGetAtomContribs_Abalpha(mol_sinH, patts_Aba, order_Aba,
                                                      verbose)  # Abraham properties alpha
             for i in range(len(at)):
@@ -563,126 +590,156 @@ def calcular_bond(moleculas, variables, coeff, names, linear_set, verbose):
 
 
 def main_params(in_fname, in_model, out_fname, id_field_set, type_set, linear_set, data_only, verbose):
-    i = 0
-    modelos=[]
     propiedades = ['Std', 'Dip', 'Dip2', 'Hyd', 'Pols', 'Mol', 'Pol', 'Van', 'Gas', 'Ato', 'Ab-R2', 'Ab-pi2H',
                    'Ab-sumA2H', 'Ab-sumB2H', 'Ab-sumB20', 'Ab-logL16', 'solo']
-    with open(in_model) as f:
-        reader = csv.DictReader(f, delimiter=';')
-        for row in reader:
-            i = i + 1
-            modelos.append(['modelo_' + str(i), int(row['n']), str(row['variables']), str(row['coeff'])])
 
+    # load the input file and ensure the format is correct
+    df = pd.read_csv(in_model, sep=';')
+    df = df.reindex(['n', 'variables', 'coeff'], axis=1)
+    df['n'] = df['n'].astype('int')
+
+    modelos = df.values.tolist()
+    for idx, model in enumerate(modelos):
+        model.insert(0, f'modelo_{idx+1}')
+
+    # load molecules
     moleculas = Chem.SDMolSupplier(in_fname, False, False, False)
-    archivo = os.path.split(os.path.abspath(in_fname))
-    path = os.path.dirname(os.path.abspath(in_fname))#+'/'
-    #path = os.path.join(path, "TOPSMODE\\Contr\\")
-    #print(in_fname.rsplit('/', 1)[1].rsplit(".",1)[0])
-    #print(os.path.splitext(in_fname)[0])
+     
+    # load the content of the SMARTS files into memory
+    load_smarts()
 
+    # calculate molecules' names
     nombres = np.array([])
     id = 1
     for mol in moleculas:
-        if id_field_set == 'title':
-            tmp = mol.GetProp('_Name')
-        elif id_field_set == 'gen' or id_field_set is None:
-            tmp = 'MolID_' + str(id)
-            id += 1
-        nombres=np.append(nombres, tmp)
-    variables = []
-    f = 0
+        tmp, id = get_molname(mol, id_field_set, id)
+        nombres = np.append(nombres, tmp)
+
+    # build output files' path
+    archivo = os.path.split(os.path.abspath(in_fname))
+    path = os.path.dirname(os.path.abspath(in_fname)) #+'/'
 
     if (type_set == 'bond'):
-        path = os.path.join(path, "TOPSMODE" + archivo[1].split(".")[0] + "\\Contr_" +
-                            in_fname.rsplit('/', 1)[1].rsplit(".", 1)[0] + "_" +
-                            in_model.rsplit('/', 1)[1].rsplit(".", 1)[0] + "\\")
+        path = os.path.join(
+            path, 
+            "TOPSMODE" + archivo[1].split(".")[0], 
+            "Contr_", 
+            in_fname.rsplit('/', 1)[1].rsplit(".", 1)[0], 
+            in_model.rsplit('/', 1)[1].rsplit(".", 1)[0]
+        )
     else:
-        path = os.path.join(path, "TOPSMODE" + archivo[1].split(".")[0] + "\\Contr_ato" +
-                            in_fname.rsplit('/', 1)[1].rsplit(".", 1)[0] + "_" +
-                            in_model.rsplit('/', 1)[1].rsplit(".", 1)[0] + "\\")
+        path = os.path.join(
+            path, 
+            "TOPSMODE" + archivo[1].split(".")[0], 
+            "Contr_ato", 
+            in_fname.rsplit('/', 1)[1].rsplit(".", 1)[0], 
+            in_model.rsplit('/', 1)[1].rsplit(".", 1)[0]
+        )
+
+    # iterate over the models to process it
+    variables = []
+    model_counter = 0
+    totales = []
 
     for modelo in modelos:
-        f+=1
-        if verbose:
-            print('Cargando datos '+ modelo[0])
+        """
+        modelo[0]: nombre
+        modelo[1]: n
+        modelo[2]: variables
+        modelo[3]: coeff
+        """
+        model_counter += 1
+        model_name = modelo[0]
+        n = modelo[1]
         variables = modelo[2].split('|')
+ 
+        if verbose:
+            print('Cargando datos '+ model_name)
+
         var = []
         des_names = []
         prop_dict = {}
-        for i in range(0, modelo[1]):
-            variables[i] = variables[i].replace('(', '|')
-            variables[i] = variables[i].replace(')', '|')
-            variables[i] = variables[i].split('|')
-            if (len(variables[i])==1):# u0
+        # FIXME -> para que sirve?
+        for i in range(0, n):
+            variables[i] = variables[i].replace('(', '|').replace(')', '|').split('|')
+
+            if len(variables[i]) == 1: # u0
                 variables[i].append('solo')
                 variables[i].append(str(0))
-                variables[i][0] = variables[i][0][:-1]# eliminar last character
-            #prop_dict[variables[i][1]].append(int(variables[i][2]))
-            #var.append(variables[i][1]+variables[i][2])
+                variables[i][0] = variables[i][0][:-1] # FIXME: xq? eliminar last character
+
             if not variables[i][1] in prop_dict.keys():
                 prop_dict[variables[i][1]] = list()
+
             prop_dict[variables[i][1]].append(int(variables[i][2]))
 
-        cumple = True
+        # FIXME -> para que sirve?
+        create_dir(path)
+        path_model = os.path.join(path, model_name)
 
-        if not os.path.exists(path):
-            os.makedirs(path)
-            print("Directory ", path, " Created ")
-        else:
-            print("Directory ", path, " already exists")
-        path2 = os.path.join(path, modelo[0] + "\\")
-        for var in variables:
-            if not os.path.exists(os.path.join(path2, "TOPSMODE_contr.csv")):
-                cumple = False
-        if not cumple:
-            if (variables[0][0]=='u' or variables[0][0]=='u0'):
+        #cumple = os.path.exists(os.path.join(path_model, "TOPSMODE_contr.csv"))        
+
+        if not os.path.exists(os.path.join(path_model, "TOPSMODE_contr.csv")):
+            if variables[0][0]=='u' or variables[0][0]=='u0':
                 contribuciones = calcular_bond(moleculas, prop_dict, modelo[3].split('|'), nombres, linear_set,
                                            verbose=0)  # primera es el intercepto
             else:
                 contribuciones = calcular_ato(moleculas, prop_dict, modelo[3].split('|'), nombres, linear_set,
                                                verbose=0)  # primera es el intercepto
-            if not os.path.exists(path2):
-                os.makedirs(path2)
-                print("Directory ", path2, " Created ")
+
+            # export contributions to csv and txt files
+            create_dir(path_model)
+
+            df = pd.DataFrame(data=contribuciones[1:], columns=contribuciones[0])
+            df.to_csv(os.path.join(path_model, out_fname + ".csv"), index=False, sep=';')
+            df.to_csv(os.path.join(path_model, out_fname + ".txt"), index=False, sep=',')
+
+            # aggregate the totals for the late summary
+            if len(totales) == 0:
+                totales = df
+                totales = totales.rename({'total': model_name}, axis=1)
             else:
-                print("Directory ", path2, " already exists")
-            df = pd.DataFrame(data=contribuciones)
-            df.to_csv(os.path.join(path2, out_fname + ".csv"), index=False, header=False, sep=';')
-            df.to_csv(os.path.join(path2, out_fname + ".txt"), index=False, header=False, sep=',')
-            #np.savetxt(os.path.join(path2, out_fname), contribuciones, fmt="%10s", delimiter=";")
-            print(data_only)
+                totales[model_name] = df['total']
+
+            totales[model_name] = totales[model_name].astype('float64')
+
+            # plot contributions
             if data_only == 'total':
                 if type_set == 'ato':
-                    plot_contributions(moleculas, os.path.join(path2, out_fname), 'ato', True)
+                    plot_contributions(moleculas, os.path.join(path_model, out_fname), 'ato', True)
                 else:
-                    plot_contributions(moleculas, os.path.join(path2, out_fname), 'bond', True)
+                    plot_contributions(moleculas, os.path.join(path_model, out_fname), 'bond', True)
 
-    path3 = os.path.join(path, "modelo_"+str(f+1)+"\\")
-    if not os.path.exists(path3) and len(modelos) > 1:
-        os.makedirs(path3)
-        totales = []
-        for modelo in modelos:
-            path2 = os.path.join(path, modelo[0] + "\\")
-            if (type_set=='ato'):
-                df = pd.read_csv(os.path.join(path2, out_fname +".csv"), sep=';', usecols=['molecule', 'atom', 'total'])
-            else:
-                df = pd.read_csv(os.path.join(path2, out_fname+".csv"), sep=';', usecols=['molecule', 'bond', 'total'])
-            if len(totales)==0:
-                totales = df
-                totales = totales.rename({'total': modelo[0]}, axis=1)
-            else:
-                totales[modelo[0]] = df['total']
-        totales['total'] = totales.iloc[:, 2:len(list(totales))].sum(axis=1)
-        totales['total'] = totales['total']/f
-        totales.to_csv(os.path.join(path3, out_fname + ".csv"), index=False, header=True, sep=';')
-        totales.to_csv(os.path.join(path3, out_fname + ".txt"), index=False, header=True, sep=',')
-        if data_only == 'total':
-            if (variables[0][0] == 'uato' or variables[0][0] == 'uato0'):
-                plot_contributions(moleculas, os.path.join(path3, out_fname), 'ato',True)
-            else:
-                plot_contributions(moleculas, os.path.join(path3, out_fname), 'bond', True)
-        #np.savetxt(os.path.join(path3, out_fname), consenso, fmt="%10s", delimiter=";")
-        modelos.append(['modelo_'+str(f+1), 'consenso', '-', '-'])
+    # calculate the summary of the processed models as the model N+1
+    path_summary = os.path.join(path, f"modelo_{model_counter+1}")
+
+    if not os.path.exists(path_summary) and len(modelos) > 1:
+        os.makedirs(path_summary)
+
+    # FIXME: esto no debería estar fuera del if? si la carpeta existe no se recalcula el sumatorio
+
+    # remove useless columns for the summary
+    to_delete = ['nombre']
+    if 'solo' in totales.columns:
+        to_delete.append('solo')
+    totales = totales.drop(to_delete, axis=1)
+
+    # summarize figures
+    totales['total'] = totales.iloc[:, 2:len(list(totales))].sum(axis=1)
+    totales['total'] = totales['total']/model_counter
+    totales.to_csv(os.path.join(path_summary, out_fname + ".csv"), index=False, header=True, sep=';')
+    totales.to_csv(os.path.join(path_summary, out_fname + ".txt"), index=False, header=True, sep=',')
+
+    if data_only == 'total':
+        # FIXME: xq no comprueba type_set?
+        #if variables[0][0] == 'uato' or variables[0][0] == 'uato0':
+        if type_set == 'ato':
+            plot_contributions(moleculas, os.path.join(path_summary, out_fname), 'ato',True)
+        else:
+            plot_contributions(moleculas, os.path.join(path_summary, out_fname), 'bond', True)
+
+    modelos.append(['modelo_'+str(model_counter+1), 'consenso', '-', '-'])
+
     return nombres
 
 
