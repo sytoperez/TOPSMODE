@@ -52,27 +52,34 @@ def get_script_path():
     return os.path.abspath(os.path.dirname(__file__))
 
 def plot_contributions(moleculas, in_file, type_set, total_only):
-    data = genfromtxt(in_file + ".csv", delimiter=';', skip_header=1)
-    lista = genfromtxt(in_file + ".csv", delimiter=';', skip_header=1)
+    # load source data
+    df = pd.read_csv(in_file + ".csv", sep=';')
+    df['molecule'] = np.nan 
 
-    with open(in_file + ".csv", newline='') as csvfile:
-        headers = list(csv.reader(csvfile, skipinitialspace=True, delimiter=';', quotechar='|'))
+    data = df.to_numpy()
+    lista = np.copy(data)
+    headers = list(df.columns.values[2:])
 
-    headers = headers[0][2:]
     data = data[:, 2:]
     lista = lista[:, 1]
     c = 0
-    m = 0
-    for mol in moleculas:
-        m = m + 1
+
+    # pre-compute drawing parameters
+    ps = Draw.ContourParams()
+    ps.fillGrid = True
+    ps.gridResolution = 0.1
+    ps.extraGridPadding = 0.5
+    # ps.setScale = False
+
+    # draw the molecules
+    for m, mol in enumerate(moleculas, start=1):
         mol_H = Chem.AddHs(mol, explicitOnly=True)
         mol_sinH = Chem.RemoveHs(mol_H, False, True, False)
+
         locs = []
-        if (type_set=='bond'):
-            cantidad=mol_sinH.GetNumBonds()
-            e = 0
-            for bond in mol_sinH.GetBonds():
-                e = e + 1
+        if type_set == 'bond':
+            cantidad = mol_sinH.GetNumBonds()
+            for e, bond in enumerate(mol_sinH.GetBonds(), start=1):
                 if e != lista[c + e - 1]:
                     print('Error datos no coinciden. Bond ' + str(e) + '!=' + lista[c + e - 1])
                     return
@@ -86,54 +93,38 @@ def plot_contributions(moleculas, in_file, type_set, total_only):
                 locs.append(Geometry.Point2D(centrox, centroy))
         else:
             cantidad = mol_sinH.GetNumAtoms()
-            e = 0
-            for atom in mol_sinH.GetAtoms():
-                e = e + 1
+            for e, atom in enumerate(mol_sinH.GetAtoms(), start=1):
                 if e != lista[c + e - 1]:
                     print('Error datos no coinciden. Atom ' + str(e) + '!=' + lista[c + e - 1])
                     return
                 pos = mol_sinH.GetConformer().GetAtomPosition(atom.GetIdx())
                 locs.append(Geometry.Point2D(pos.x, pos.y))
 
-        ps = Draw.ContourParams()
-        ps.fillGrid = True
-        ps.gridResolution = 0.1
-        ps.extraGridPadding = 0.5
-        # ps.setScale = False
         sigma = 0.3 * (locs[0] - locs[1]).Length()
         sigmas = [sigma] * cantidad
+
         if total_only:
             i = len(headers) - 1
-            drawer = Draw.rdMolDraw2D
+            out_file = os.path.join(os.path.dirname(in_file + ".csv"), str(headers[i]) + '_' + str(m) + '.png')
+            
             d = Draw.MolDraw2DCairo(600, 600)
             d.ClearDrawing()
-            Draw.ContourAndDrawGaussians(d, locs, list(data[c:(c + cantidad), i]), sigmas,
-                                         nContours=10,
-                                         params=ps)
+            Draw.ContourAndDrawGaussians(d, locs, list(data[c:(c + cantidad), i]), sigmas, nContours=10, params=ps)
             d.drawOptions().clearBackground = False
             d.DrawMolecule(mol_sinH)
-            os.path.dirname(in_file + ".csv")
-            with open(os.path.join(os.path.dirname(in_file + ".csv"), str(headers[i]) + '_' + str(m) + '.png'), 'wb') as f:
-                f.write(d.GetDrawingText())
+            d.WriteDrawingText(out_file)
         else:
             for i in range(0, len(headers)):
-                # i = len(headers) - 1
-                drawer = Draw.rdMolDraw2D
+                out_file = os.path.join(os.path.dirname(in_file + ".csv"), str(headers[i]) + '_' + str(m) + '.png')
+
                 d = Draw.MolDraw2DCairo(600, 600)
                 d.ClearDrawing()
-                Draw.ContourAndDrawGaussians(d, locs, list(data[c:(c + cantidad), i]), sigmas,
-                                             nContours=10, params=ps)
+                Draw.ContourAndDrawGaussians(d, locs, list(data[c:(c + cantidad), i]), sigmas, nContours=10, params=ps)
                 d.drawOptions().clearBackground = False
                 d.DrawMolecule(mol_sinH)
-                # fig = Draw.MolToMPL(mol)#, coordScale=1.5)
-                # fig.savefig('C:/Horacio2/mosquitos/figura.png', bbox_inches='tight')
-                os.path.dirname(in_file + ".csv")
-                with open(os.path.join(os.path.dirname(in_file + ".csv"), str(headers[i]) + '_' + str(m) + '.png'),
-                          'wb') as f:
-                    f.write(d.GetDrawingText())
+                d.WriteDrawingText(out_file)
 
         c = c + cantidad
-
 
 def extraer_ctrb(mol, prop, n, tipo):
     c = 0
@@ -161,18 +152,16 @@ def extraer_ctrb(mol, prop, n, tipo):
     return diagonal
 
 
-def calcular_ato(moleculas,variables, coeff, names, linear_set, verbose):
+def calcular_ato(moleculas, variables, coeff, names, linear_set, verbose):
     print('calculating contributions...')
-    m = 0
-    titulo = ["molecule", "atom","nombre"]
-    var = [p for p in variables]
-    titulo = np.append(titulo, var)
-    titulo = np.append(titulo, 'total')
+
+    titulo = ["molecule", "atom", "nombre"] + [p for p in variables] + ["total"]
     tabla_final = np.array([])
-    for mol in moleculas:
-        m = m + 1
+
+    for m, mol in enumerate(moleculas, start = 1):
         if verbose:
-            print('\tMolecula %d' % (m))
+            print('\tMolecula %d' % m)
+
         mol_H = Chem.AddHs(mol, explicitOnly=True)
         mol_sinH = Chem.RemoveHs(mol_H, False, True, False)
         mol_ch_sinH = Chem.RemoveHs(mol_H, False, True, True)
@@ -182,6 +171,7 @@ def calcular_ato(moleculas,variables, coeff, names, linear_set, verbose):
         bonds = mol_sinH.GetBonds()
         at_ch = mol_ch_sinH.GetAtoms()
         nombres = variables.keys()
+
         if 'solo' in nombres:
             for i in range(len(at)):
                 at[i].SetDoubleProp('solo', 1)
@@ -221,6 +211,7 @@ def calcular_ato(moleculas,variables, coeff, names, linear_set, verbose):
                 else:
                     at_inicial.SetDoubleProp('Dip', at_inicial.GetDoubleProp('Dip') + (
                             valores_dip[enlace.GetIdx()] / at_inicial.GetDegree()))
+
         if 'Dip2' in nombres:
             valores_dip2 = calc.calcular_dipolos2(mol_sinH)  # Dipole moments2
             for enlace in bonds:
@@ -237,6 +228,7 @@ def calcular_ato(moleculas,variables, coeff, names, linear_set, verbose):
                 else:
                     at_inicial.SetDoubleProp('Dip2', at_inicial.GetDoubleProp('Dip2') + (
                             valores_dip2[enlace.GetIdx()] / at_inicial.GetDegree()))
+
         if 'Hyd' or 'Mol' in nombres:
             order, patts = smarts['Crippen']
             valores_hyd_MR = calc._pyGetAtomContribs(mol_sinH, patts, order, verbose)  # Hydrof and MR Crippen
@@ -274,7 +266,6 @@ def calcular_ato(moleculas,variables, coeff, names, linear_set, verbose):
                 at_ch[i].SetDoubleProp('Gas', at_ch[i].GetDoubleProp('_GasteigerCharge'))
 
         if 'Ato' in nombres:
-            c = 0
             for i in range(len(at)):
                 at[i].SetDoubleProp('Ato', at[i].GetMass())
 
@@ -309,55 +300,55 @@ def calcular_ato(moleculas,variables, coeff, names, linear_set, verbose):
 
         if 'Ab-sumA2H' in nombres:
             order_Aba, patts_Aba = smarts['Abraham_4']
-            valores_Aba = calc._pyGetAtomContribs_Abalpha(mol_sinH, patts_Aba, order_Aba,
-                                                     verbose)  # Abraham properties alpha
+            valores_Aba = calc._pyGetAtomContribs_Abalpha(mol_sinH, patts_Aba, order_Aba, verbose)  # Abraham properties alpha
             for i in range(len(at)):
                 at[i].SetDoubleProp('Ab-sumA2H', valores_Aba[i])
+
         c = 0
         n = names[m - 1]
-        columna1 = [str(n) for i in range(1, mol_sinH.GetNumAtoms() + 1)]
-        columna2 = [i for i in range(1, mol_sinH.GetNumAtoms() + 1)]
+        columna1 = [str(n)]*mol_sinH.GetNumAtoms()
+        columna2 = list(range(1, mol_sinH.GetNumAtoms()+1))
         columna3 = [atomo.GetSymbol() for atomo in mol_sinH.GetAtoms()]
-        tabla = np.insert(np.array([columna1]).T, 1, columna2, axis=1)
-        tabla = np.insert(tabla, 2, columna3, axis=1)
-        # tabla.astype(float)
-        # print(coeff[c])
+        tabla = np.column_stack((columna1, columna2, columna3))
+
         if linear_set == 'lin':
-            total = [float(coeff[c]) / mol_sinH.GetNumAtoms() for i in range(1, mol_sinH.GetNumAtoms() + 1)]
+            total = np.array([float(coeff[c]) / mol_sinH.GetNumAtoms()]*mol_sinH.GetNumAtoms())
         else:
-            total = [0 for i in range(1, mol_sinH.GetNumAtoms() + 1)]
+            total = np.zeros(mol_sinH.GetNumAtoms())
+
         c += 1
         for p in variables:
-            # he = [p]
-            inter = [0 for i in range(1, mol_sinH.GetNumAtoms() + 1)]
+            inter = np.zeros(mol_sinH.GetNumAtoms(), dtype=np.int8)
+
             for idx in variables[p]:
                 if p == 'Gas':
                     valores = extraer_ctrb(mol_ch_sinH, p, idx, 'ato')
                 elif p == 'solo':
-                    valores = np.array([1 for i in range(1, mol_sinH.GetNumAtoms() + 1)])
+                    valores = np.ones(mol_sinH.GetNumAtoms(), dtype=np.int8)
                 else:
                     valores = extraer_ctrb(mol_sinH, p, idx, 'ato')
+
                 # if sum(valores)!=0:
                 #    valores = valores / sum(valores) # ver si incluimos standarizacion o os coeff sin std
                 v2 = valores * float(coeff[c])
-                # print(coeff[c])
                 v2.astype(float)
-                inter = [sum(x) for x in zip(v2, inter)]
-                # tabla = np.hstack((tabla, np.atleast_2d(v2).T))
-                total = [sum(x) for x in zip(v2, total)]
+                inter = inter + v2
+                total = total + v2
                 c += 1
+
             tabla = np.hstack((tabla, np.atleast_2d(inter).T))
+
         tabla = np.hstack((tabla, np.atleast_2d(total).T))
-        # tabla = np.insert(tabla, len(tabla[0]), total, axis=1)
+ 
         if len(tabla_final) == 0:
             tabla_final = tabla
         else:
             tabla_final = np.vstack((tabla_final, tabla))
+
     tabla_final = np.vstack((titulo, tabla_final))
     return tabla_final
 
 
-   
 def calcular_bond(moleculas, variables, coeff, names, linear_set, verbose):
     print('calculating contributions...')
     m = 0
@@ -652,6 +643,7 @@ def main_params(in_fname, in_model, out_fname, id_field_set, type_set, linear_se
         model_name = modelo[0]
         n = modelo[1]
         variables = modelo[2].split('|')
+        coeff = modelo[3].split('|')
  
         if verbose:
             print('Cargando datos '+ model_name)
@@ -680,12 +672,11 @@ def main_params(in_fname, in_model, out_fname, id_field_set, type_set, linear_se
         #cumple = os.path.exists(os.path.join(path_model, "TOPSMODE_contr.csv"))        
 
         if not os.path.exists(os.path.join(path_model, "TOPSMODE_contr.csv")):
-            if variables[0][0]=='u' or variables[0][0]=='u0':
-                contribuciones = calcular_bond(moleculas, prop_dict, modelo[3].split('|'), nombres, linear_set,
-                                           verbose=0)  # primera es el intercepto
+            #if variables[0][0]=='u' or variables[0][0]=='u0':
+            if type_set == 'bond':
+                contribuciones = calcular_bond(moleculas, prop_dict, coeff, nombres, linear_set, verbose=0)  # primera es el intercepto
             else:
-                contribuciones = calcular_ato(moleculas, prop_dict, modelo[3].split('|'), nombres, linear_set,
-                                               verbose=0)  # primera es el intercepto
+                contribuciones = calcular_ato(moleculas, prop_dict, coeff, nombres, linear_set, verbose=0)  # primera es el intercepto
 
             # export contributions to csv and txt files
             create_dir(path_model)
@@ -716,29 +707,29 @@ def main_params(in_fname, in_model, out_fname, id_field_set, type_set, linear_se
     if not os.path.exists(path_summary) and len(modelos) > 1:
         os.makedirs(path_summary)
 
-    # FIXME: esto no debería estar fuera del if? si la carpeta existe no se recalcula el sumatorio
+        # FIXME: esto no debería estar fuera del if? si la carpeta existe no se recalcula el sumatorio
 
-    # remove useless columns for the summary
-    to_delete = ['nombre']
-    if 'solo' in totales.columns:
-        to_delete.append('solo')
-    totales = totales.drop(to_delete, axis=1)
+        # remove useless columns for the summary
+        to_delete = ['nombre']
+        if 'solo' in totales.columns:
+            to_delete.append('solo')
+        totales = totales.drop(to_delete, axis=1)
 
-    # summarize figures
-    totales['total'] = totales.iloc[:, 2:len(list(totales))].sum(axis=1)
-    totales['total'] = totales['total']/model_counter
-    totales.to_csv(os.path.join(path_summary, out_fname + ".csv"), index=False, header=True, sep=';')
-    totales.to_csv(os.path.join(path_summary, out_fname + ".txt"), index=False, header=True, sep=',')
+        # summarize figures
+        totales['total'] = totales.iloc[:, 2:len(list(totales))].sum(axis=1)
+        totales['total'] = totales['total']/model_counter
+        totales.to_csv(os.path.join(path_summary, out_fname + ".csv"), index=False, header=True, sep=';')
+        totales.to_csv(os.path.join(path_summary, out_fname + ".txt"), index=False, header=True, sep=',')
 
-    if data_only == 'total':
-        # FIXME: xq no comprueba type_set?
-        #if variables[0][0] == 'uato' or variables[0][0] == 'uato0':
-        if type_set == 'ato':
-            plot_contributions(moleculas, os.path.join(path_summary, out_fname), 'ato',True)
-        else:
-            plot_contributions(moleculas, os.path.join(path_summary, out_fname), 'bond', True)
+        if data_only == 'total':
+            # FIXME: xq no comprueba type_set?
+            #if variables[0][0] == 'uato' or variables[0][0] == 'uato0':
+            if type_set == 'ato':
+                plot_contributions(moleculas, os.path.join(path_summary, out_fname), 'ato', True)
+            else:
+                plot_contributions(moleculas, os.path.join(path_summary, out_fname), 'bond', True)
 
-    modelos.append(['modelo_'+str(model_counter+1), 'consenso', '-', '-'])
+        modelos.append(['modelo_'+str(model_counter+1), 'consenso', '-', '-'])
 
     return nombres
 
