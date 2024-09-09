@@ -19,8 +19,11 @@ import Calculadora as calc
 
 numero = 15
 path = ""
+"""
 descriptores = ['Std', 'Dip', 'Dip2', 'Hyd', 'Pols', 'Mol', 'Pol', 'Van', 'Gas', 'Ato', 'Ab-R2', 'Ab-pi2H', 'Ab-sumA2H', 'Ab-sumB2H', 'Ab-sumB20', 'Ab-logL16']
+descriptores_ato = ['Atz', 'Ele', 'IPot', 'Hyd', 'Pols', 'Mol', 'Pol', 'Van', 'Gas', 'Ato', 'Ab-R2', 'Ab-pi2H', 'Ab-sumA2H', 'Ab-sumB2H', 'Ab-sumB20', 'Ab-logL16']
 descriptores_meta = ' '.join(descriptores)
+"""
 smarts = {}
 
 def load_smarts():
@@ -69,64 +72,27 @@ def calcular_ato(mol, nombres, numero, verbose):
 
     fila = np.array([mol_sinH.GetNumAtoms()])
 
-    if 'Std' in nombres:
-        order_Std, patts_Std = smarts['Std']
-        valores_std = calc._pyGetContribs(mol_sinH, patts_Std, order_Std)  # Standard distances
-        for enlace in bonds:
-            enlace.SetProp('Std1', str(round(valores_std[enlace.GetIdx()], 6)))
-            at_inicial = at[enlace.GetBeginAtomIdx()]
-            at_final = at[enlace.GetEndAtomIdx()]
-            if (at_final.HasProp('Std')==0):
-                at_final.SetDoubleProp('Std',(valores_std[enlace.GetIdx()] / (2*at_final.GetDegree())))
-            else:
-                at_final.SetDoubleProp('Std', at_final.GetDoubleProp('Std') + (valores_std[enlace.GetIdx()] / (2*at_final.GetDegree())))
-            if (at_inicial.HasProp('Std')==0):
-                at_inicial.SetDoubleProp('Std',(valores_std[enlace.GetIdx()] / (2*at_inicial.GetDegree())))
-            else:
-                at_inicial.SetDoubleProp('Std', at_inicial.GetDoubleProp('Std') + (valores_std[enlace.GetIdx()] / (2*at_inicial.GetDegree())))
+    if 'Atz' in nombres:
+        for i in range(len(at)):
+            at[i].SetDoubleProp('Atz', at[i].GetAtomicNum())
+        des_atz = calc.calcular(mol_sinH, 'Atz', numero,'ato')
+        fila = np.append(fila, des_atz)
 
-        des_std = calc.calcular(mol_sinH, 'Std', numero,'ato')
-        fila = np.append(fila, des_std)
+    if 'Ele' in nombres:
+        valores_ele = calc.calcular_ele(mol_sinH)
+        for i in range(len(at)):
+            at[i].SetDoubleProp('Ele', valores_ele[i])
 
-    if 'Dip' in nombres:
-        order_Dip, patts_Dip = smarts['Dip']
-        valores_dip = calc._pyGetContribs(mol_sinH, patts_Dip, order_Dip)  # Dipole moments
-        for enlace in bonds:
-            enlace.SetProp('Dip1', str(round(valores_dip[enlace.GetIdx()], 6)))
-            at_inicial = at[enlace.GetBeginAtomIdx()]
-            at_final = at[enlace.GetEndAtomIdx()]
+        des_ele = calc.calcular(mol_sinH, 'Ele', numero,'ato')
+        fila = np.append(fila, des_ele)
 
-            if (at_final.HasProp('Dip')==0):
-                at_final.SetDoubleProp('Dip',(valores_std[enlace.GetIdx()] / (2*at_final.GetDegree())))
-            else:
-                at_final.SetDoubleProp('Dip', at_final.GetDoubleProp('Dip') + (valores_std[enlace.GetIdx()] / (2*at_final.GetDegree())))
-            if (at_inicial.HasProp('Dip')==0):
-                at_inicial.SetDoubleProp('Dip',(valores_std[enlace.GetIdx()] / (2*at_inicial.GetDegree())))
-            else:
-                at_inicial.SetDoubleProp('Dip', at_inicial.GetDoubleProp('Dip') + (valores_std[enlace.GetIdx()] / (2*at_inicial.GetDegree())))
+    if 'IPot' in nombres:
+        valores_ipo = calc.calcular_ipo(mol_sinH)
+        for i in range(len(at)):
+            at[i].SetDoubleProp('IPot', valores_ipo[i])
 
-        des_dip = calc.calcular(mol_sinH, 'Dip', numero,'ato')
-        fila = np.append(fila, des_dip)
-
-    if 'Dip2' in nombres:
-        valores_dip2 = calc.calcular_dipolos2(mol_sinH)  # Dipole moments2
-        for enlace in bonds:
-            enlace.SetProp('Dip21', str(round(valores_dip2[enlace.GetIdx()], 6)))
-            at_inicial = at[enlace.GetBeginAtomIdx()]
-            at_final = at[enlace.GetEndAtomIdx()]
-            if (at_final.HasProp('Dip2') == 0):
-                at_final.SetDoubleProp('Dip2', (valores_std[enlace.GetIdx()] / (2*at_final.GetDegree())))
-            else:
-                at_final.SetDoubleProp('Dip2', at_final.GetDoubleProp('Dip2') + (
-                            valores_std[enlace.GetIdx()] / (2*at_final.GetDegree())))
-            if (at_inicial.HasProp('Dip2') == 0):
-                at_inicial.SetDoubleProp('Dip2', (valores_std[enlace.GetIdx()] / (2*at_inicial.GetDegree())))
-            else:
-                at_inicial.SetDoubleProp('Dip2', at_inicial.GetDoubleProp('Dip2') + (
-                            valores_std[enlace.GetIdx()] / (2*at_inicial.GetDegree())))
-
-        des_dip2 = calc.calcular(mol_sinH, 'Dip2', numero,'ato')
-        fila = np.append(fila, des_dip2)
+        des_ipo = calc.calcular(mol_sinH, 'IPot', numero, 'ato')
+        fila = np.append(fila, des_ipo)
 
     if 'Hyd' in nombres:
         order, patts = smarts['Crippen']
@@ -473,7 +439,7 @@ def calcular_bond(mol, nombres, numero, verbose):
     overall = np.delete(overall, 0, 0)
     return overall
 
-def main_params(in_fname, out_fname,des_names,des_type, numero, id_field_set, activity_field_set, verbose):
+def main_params(in_fname, out_fname,des_type, numero, id_field_set, activity_field_set, verbose):
 
     moleculas = Chem.SDMolSupplier(in_fname, False, False, False)
 
@@ -494,6 +460,9 @@ def main_params(in_fname, out_fname,des_names,des_type, numero, id_field_set, ac
     titulo.append(get_suffix(des_type))
 
     prefix = 'uato' if des_type == 'ato' else 'u'
+    des_names= ['Atz', 'Ele', 'IPot', 'Hyd', 'Pols', 'Mol', 'Pol', 'Van', 'Gas', 'Ato', 'Ab-R2', 'Ab-pi2H',
+                        'Ab-sumA2H', 'Ab-sumB2H', 'Ab-sumB20', 'Ab-logL16'] if des_type == 'ato' else ['Std', 'Dip', 'Dip2', 'Hyd', 'Pols', 'Mol', 'Pol', 'Van', 'Gas', 'Ato', 'Ab-R2', 'Ab-pi2H',
+                    'Ab-sumA2H', 'Ab-sumB2H', 'Ab-sumB20', 'Ab-logL16']
     for n in des_names:
         for i in range(1, numero + 1):
             a = prefix + '(' + n + ')' + str(i)
@@ -511,28 +480,37 @@ def main_params(in_fname, out_fname,des_names,des_type, numero, id_field_set, ac
     for mol in moleculas:
         # get the molecule's name and save it for later
         tmp, id = get_molname(mol, id_field_set, id)
-        nombres = np.append(nombres, tmp)
-
+        #nombres = np.append(nombres, tmp)
+        if (len(nombres)==0):
+            nombres =tmp
+        else:
+            nombres = np.vstack([nombres, tmp])
         # save activity
-        if activity_field_set is not None and activity_field_set != '':
-            act = np.vstack([act, mol.GetProp(activity_field_set)])
+        if activity_field_set is not None or activity_field_set != '':
+            tmp2 = mol.GetProp(activity_field_set)
+            if(len(act)==0):
+                act = tmp2
+            else:
+                act = np.vstack([act, tmp2])
+        #if activity_field_set is not None and activity_field_set != '':
+         #   act = np.vstack([act, mol.GetProp(activity_field_set)])
 
         # calculate descriptors and store the results in an array
         if des_type == 'ato':
             aux = calcular_ato(mol, des_names, numero, verbose)
         else:
-            aux = calcular_bond(mol, des_names, numero, verbose) # TODO
+            aux = calcular_bond(mol, des_names, numero, verbose)
 
         if len(descriptores) == 0:
             descriptores = aux
         else:
             descriptores = np.vstack((descriptores, aux))
 
-    # FIXME: para que es -> Nombre de las moleculas
+
     if activity_field_set is not None:
         nombres = np.append(nombres, act, axis=1)
 
-    nombres = nombres.reshape(len(nombres), 1)
+    #nombres = nombres.reshape(len(nombres), 1)
     descriptores = np.hstack((nombres, descriptores))
 
     # transform into dataframe and export
@@ -549,10 +527,10 @@ def main():
                         help='output file with calculated descriptors.')
     parser.add_argument('-t', '--des_type', metavar='ato|bond', default='bond',
                         help='descriptors type: ato for atomic calculation and bond for bond calculation.')
-    parser.add_argument('-d', '--descriptors',
+    """parser.add_argument('-d', '--descriptors',
                         metavar=descriptores_meta,
                         default=descriptores, nargs='*',
-                        help='descriptors to build. Default all.')
+                        help='descriptors to build. Default all.')"""
     parser.add_argument('-n', '--num_des', default=15,
                         help='Integer value. Number of descriptors. Default: 15.')
     parser.add_argument('-w', '--id_field_set', metavar='field_set', default='gen',
@@ -566,14 +544,14 @@ def main():
     args = vars(parser.parse_args())
     in_fname = args['in']
     out_fname = args['out']
-    des_names = args['descriptors']
+    #des_names = args['descriptors']
     des_type = args['des_type']
     numero = args['num_des']
     id_field_set = args['id_field_set']
     activity_field_set = args['field_activity']
     verbose = args['verbose']
 
-    main_params(in_fname, out_fname, des_names, des_type, numero, id_field_set, activity_field_set, verbose)
+    main_params(in_fname, out_fname, des_type, numero, id_field_set, activity_field_set, verbose)
 
 
 if __name__ == '__main__':

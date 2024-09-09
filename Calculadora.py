@@ -551,6 +551,25 @@ def suma(matriz):
         salida = salida+matriz[i, i]
     return salida
 """
+def calcular_ele(mol):
+    lista_atomos = ['F', 'Cl', 'Br', 'C', 'O', 'N', 'S','P', 'H', 'I','Si', 'B','Se', 'As']
+    electronegatividad=[4,3.475,3.219,2.746,3.654,3.194,2.957,2.515,2.592,2.778, 2.08,2.28,3.01,2.82]
+    atomos=mol.GetAtoms()
+    contrib = [0.] * mol.GetNumAtoms()
+    for i in range(len(atomos)):
+        contrib[i]=electronegatividad[lista_atomos.index(atomos[i].GetSymbol())]
+
+    return contrib
+
+def calcular_ipo(mol):
+    lista_atomos = ['F', 'Cl', 'Br', 'C', 'O', 'N', 'S', 'P', 'H', 'I','Si', 'B','Se', 'As']
+    potencial = [17.423,12.968,11.814,11.260,11.260,13.618,14.534,10.360,10.487,13.598, 10.451, 8.152,8.298,9.752,9.815]
+    atomos = mol.GetAtoms()
+    contrib = [0.] * mol.GetNumAtoms()
+    for i in range(len(atomos)):
+        contrib[i] = potencial[lista_atomos.index(atomos[i].GetSymbol())]
+
+    return contrib
 
 def calcular_dipolos2(mol):
     lista_atomos = ['F','Cl','Br','C','O','N','S']

@@ -58,9 +58,9 @@ def plot_contributions(moleculas, in_file, type_set, total_only):
 
     data = df.to_numpy()
     lista = np.copy(data)
-    headers = list(df.columns.values[2:])
+    headers = list(df.columns.values[3:])
 
-    data = data[:, 2:]
+    data = data[:, 3:]
     lista = lista[:, 1]
     c = 0
 
@@ -176,58 +176,19 @@ def calcular_ato(moleculas, variables, coeff, names, linear_set, verbose):
             for i in range(len(at)):
                 at[i].SetDoubleProp('solo', 1)
 
-        if 'Std' in nombres:
-            order_Std, patts_Std = smarts['Std']
-            valores_std = calc._pyGetContribs(mol_sinH, patts_Std, order_Std)  # Standard distances
-            for enlace in bonds:
-                enlace.SetProp('Std1', str(round(valores_std[enlace.GetIdx()], 6)))
-                at_inicial = at[enlace.GetBeginAtomIdx()]
-                at_final = at[enlace.GetEndAtomIdx()]
-                if (at_final.HasProp('Std') == 0):
-                    at_final.SetDoubleProp('Std', (valores_std[enlace.GetIdx()] / at_final.GetDegree()))
-                else:
-                    at_final.SetDoubleProp('Std', at_final.GetDoubleProp('Std') + (
-                                valores_std[enlace.GetIdx()] / at_final.GetDegree()))
-                if (at_inicial.HasProp('Std') == 0):
-                    at_inicial.SetDoubleProp('Std', (valores_std[enlace.GetIdx()] / at_inicial.GetDegree()))
-                else:
-                    at_inicial.SetDoubleProp('Std', at_inicial.GetDoubleProp('Std') + (
-                                valores_std[enlace.GetIdx()] / at_inicial.GetDegree()))
+        if 'Atz' in nombres:
+            for i in range(len(at)):
+                at[i].SetDoubleProp('Atz', at[i].GetAtomicNum())
                 
-        if 'Dip' in nombres:
-            order_Dip, patts_Dip = smarts['Dip']
-            valores_dip = calc._pyGetContribs(mol_sinH, patts_Dip, order_Dip)  # Dipole moments
-            for enlace in bonds:
-                enlace.SetProp('Dip1', str(round(valores_dip[enlace.GetIdx()], 6)))
-                at_inicial = at[enlace.GetBeginAtomIdx()]
-                at_final = at[enlace.GetEndAtomIdx()]
-                if (at_final.HasProp('Dip') == 0):
-                    at_final.SetDoubleProp('Dip', (valores_dip[enlace.GetIdx()] / at_final.GetDegree()))
-                else:
-                    at_final.SetDoubleProp('Dip', at_final.GetDoubleProp('Dip') + (
-                            valores_dip[enlace.GetIdx()] / at_final.GetDegree()))
-                if (at_inicial.HasProp('Dip') == 0):
-                    at_inicial.SetDoubleProp('Dip', (valores_dip[enlace.GetIdx()] / at_inicial.GetDegree()))
-                else:
-                    at_inicial.SetDoubleProp('Dip', at_inicial.GetDoubleProp('Dip') + (
-                            valores_dip[enlace.GetIdx()] / at_inicial.GetDegree()))
+        if 'Ele' in nombres:
+            valores_ele = calc.calcular_ele(mol_sinH)
+            for i in range(len(at)):
+                at[i].SetDoubleProp('Ele', valores_ele[i])
 
-        if 'Dip2' in nombres:
-            valores_dip2 = calc.calcular_dipolos2(mol_sinH)  # Dipole moments2
-            for enlace in bonds:
-                enlace.SetProp('Dip21', str(round(valores_dip2[enlace.GetIdx()], 6)))
-                at_inicial = at[enlace.GetBeginAtomIdx()]
-                at_final = at[enlace.GetEndAtomIdx()]
-                if (at_final.HasProp('Dip2') == 0):
-                    at_final.SetDoubleProp('Dip2', (valores_dip2[enlace.GetIdx()] / at_final.GetDegree()))
-                else:
-                    at_final.SetDoubleProp('Dip2', at_final.GetDoubleProp('Dip2') + (
-                            valores_dip2[enlace.GetIdx()] / at_final.GetDegree()))
-                if (at_inicial.HasProp('Dip2') == 0):
-                    at_inicial.SetDoubleProp('Dip2', (valores_dip2[enlace.GetIdx()] / at_inicial.GetDegree()))
-                else:
-                    at_inicial.SetDoubleProp('Dip2', at_inicial.GetDoubleProp('Dip2') + (
-                            valores_dip2[enlace.GetIdx()] / at_inicial.GetDegree()))
+        if 'IPot' in nombres:
+            valores_ipo = calc.calcular_ipo(mol_sinH)
+            for i in range(len(at)):
+                at[i].SetDoubleProp('IPot', valores_ipo[i])
 
         if 'Hyd' or 'Mol' in nombres:
             order, patts = smarts['Crippen']
@@ -581,8 +542,6 @@ def calcular_bond(moleculas, variables, coeff, names, linear_set, verbose):
 
 
 def main_params(in_fname, in_model, out_fname, id_field_set, type_set, linear_set, data_only, verbose):
-    propiedades = ['Std', 'Dip', 'Dip2', 'Hyd', 'Pols', 'Mol', 'Pol', 'Van', 'Gas', 'Ato', 'Ab-R2', 'Ab-pi2H',
-                   'Ab-sumA2H', 'Ab-sumB2H', 'Ab-sumB20', 'Ab-logL16', 'solo']
 
     # load the input file and ensure the format is correct
     df = pd.read_csv(in_model, sep=';')
@@ -609,33 +568,19 @@ def main_params(in_fname, in_model, out_fname, id_field_set, type_set, linear_se
     # build output files' path
     archivo = os.path.split(os.path.abspath(in_fname))
     path = os.path.dirname(os.path.abspath(in_fname)) #+'/'
+    path = os.path.join(path, "TOPSMODE" + archivo[1].split(".")[0] + "\\Contr_" + type_set +
+                        in_fname.rsplit('/', 1)[1].rsplit(".", 1)[0] + "_" +
+                        in_model.rsplit('/', 1)[1].rsplit(".", 1)[0] + "\\")
 
-    """
-    if (type_set == 'bond'):
-        path = os.path.join(
-            path, 
-            "TOPSMODE" + archivo[1].split(".")[0], 
-            "Contr_", 
-            in_fname.rsplit('/', 1)[1].rsplit(".", 1)[0], 
-            in_model.rsplit('/', 1)[1].rsplit(".", 1)[0]
-        )
-    else:
-        path = os.path.join(
-            path, 
-            "TOPSMODE" + archivo[1].split(".")[0], 
-            "Contr_ato", 
-            in_fname.rsplit('/', 1)[1].rsplit(".", 1)[0], 
-            in_model.rsplit('/', 1)[1].rsplit(".", 1)[0]
-        )
     """
     path = os.path.join(
         path, 
         "TOPSMODE" + archivo[1].split(".")[0], 
-        "Contr_" + type_set, 
+        "Contr_" + type_set+
         in_fname.rsplit('/', 1)[1].rsplit(".", 1)[0], 
         in_model.rsplit('/', 1)[1].rsplit(".", 1)[0]
     )
-
+    """
     # iterate over the models to process it
     variables = []
     model_counter = 0
@@ -660,21 +605,19 @@ def main_params(in_fname, in_model, out_fname, id_field_set, type_set, linear_se
         var = []
         des_names = []
         prop_dict = {}
-        # FIXME -> para que sirve?
         for i in range(0, n):
             variables[i] = variables[i].replace('(', '|').replace(')', '|').split('|')
 
             if len(variables[i]) == 1: # u0
                 variables[i].append('solo')
                 variables[i].append(str(0))
-                variables[i][0] = variables[i][0][:-1] # FIXME: xq? eliminar last character
+                variables[i][0] = variables[i][0][:-1]
 
             if not variables[i][1] in prop_dict.keys():
                 prop_dict[variables[i][1]] = list()
 
             prop_dict[variables[i][1]].append(int(variables[i][2]))
 
-        # FIXME -> para que sirve?
         create_dir(path)
         path_model = os.path.join(path, model_name)
 
@@ -709,14 +652,17 @@ def main_params(in_fname, in_model, out_fname, id_field_set, type_set, linear_se
                     plot_contributions(moleculas, os.path.join(path_model, out_fname), 'ato', True)
                 else:
                     plot_contributions(moleculas, os.path.join(path_model, out_fname), 'bond', True)
+            elif data_only == 'partial':
+                if type_set == 'ato':
+                    plot_contributions(moleculas, os.path.join(path_model, out_fname), 'ato', False)
+                else:
+                    plot_contributions(moleculas, os.path.join(path_model, out_fname), 'bond', False)
 
     # calculate the summary of the processed models as the model N+1
     path_summary = os.path.join(path, f"modelo_{model_counter+1}")
 
     if not os.path.exists(path_summary) and len(modelos) > 1:
         os.makedirs(path_summary)
-
-        # FIXME: esto no debería estar fuera del if? si la carpeta existe no se recalcula el sumatorio
 
         # remove useless columns for the summary
         to_delete = []
@@ -733,12 +679,16 @@ def main_params(in_fname, in_model, out_fname, id_field_set, type_set, linear_se
         totales.to_csv(os.path.join(path_summary, out_fname + ".txt"), index=False, header=True, sep=',')
 
         if data_only == 'total':
-            # FIXME: xq no comprueba type_set?
             #if variables[0][0] == 'uato' or variables[0][0] == 'uato0':
             if type_set == 'ato':
                 plot_contributions(moleculas, os.path.join(path_summary, out_fname), 'ato', True)
             else:
                 plot_contributions(moleculas, os.path.join(path_summary, out_fname), 'bond', True)
+        elif data_only == 'partial':
+            if type_set == 'ato':
+                plot_contributions(moleculas, os.path.join(path_summary, out_fname), 'ato', False)
+            else:
+                plot_contributions(moleculas, os.path.join(path_summary, out_fname), 'bond', False)
 
         modelos.append(['modelo_'+str(model_counter+1), 'consenso', '-', '-'])
 
@@ -753,7 +703,7 @@ def main():
     parser.add_argument('-m', '--im', metavar='input.csv', required=True,
                         help='File name (with full path) for contributions. Should contain at least these columns (named): "n", "variables" (separated with |), "coeff" (separated with |).'
                              'If the coefficient are of linear model the first one must be the intercept')
-    parser.add_argument('-o', '--out', metavar='TOPSMODE.csv', required=True,
+    parser.add_argument('-o', '--out', metavar='TOPSMODE.csv', default='TOPSMODE',
                         help='output file with calculated contributions.')
     parser.add_argument('-w', '--id_field_set', metavar='field_set', default='gen',
                        help='name of unique ID for compounds (sdf). gen - auto-generated names and titles - sdf titles will be used')
@@ -761,8 +711,8 @@ def main():
                         help='descriptors type: ato for atomic calculation and bond for bond calculation.')
     parser.add_argument('-l', '--linear', metavar='lin|non', default='lin',
                         help='Model technique used (lin-linear, non-nonlinear). Default linear')
-    parser.add_argument('-d', '--data_only', metavar='data|total', default='total',
-                        help='only output .csv with data without structures in .png')
+    parser.add_argument('-d', '--data_only', metavar='data|total|partial', default='total',
+                        help='Output (data-only output .csv with data, total-output .csv with data and structures in png with total contribution, partial- output .csv with data and png with structures with total and partial contribution of weighted properties')
     parser.add_argument('-v', '--verbose', default=0,
                         help='Integer value. 0 - print no details. 1 and more - verbose output. Default: 0.')
 

@@ -33,10 +33,10 @@ class DescriptorsFrame(ttk.Labelframe):
         self._full_version = full_version
 
         self.des_type = tk.StringVar(value='bond')
-
-        self.des_std = tk.BooleanVar(value=False)
-        self.des_dip = tk.BooleanVar(value=False)
-        self.des_dip2 = tk.BooleanVar(value=False)
+        """
+        self.des_atz = tk.BooleanVar(value=False)
+        self.des_ele = tk.BooleanVar(value=False)
+        self.des_ipo = tk.BooleanVar(value=False)
         self.des_hyd = tk.BooleanVar(value=False)
         self.des_pls = tk.BooleanVar(value=False)
         self.des_mr = tk.BooleanVar(value=False)
@@ -67,20 +67,21 @@ class DescriptorsFrame(ttk.Labelframe):
         self.des_b2h_b = tk.BooleanVar(value=True)
         self.des_b2o_b = tk.BooleanVar(value=True)
         self.des_l16_b = tk.BooleanVar(value=True)
+        """
         self._value = tk.StringVar(value=str(15))
-        ttk.Radiobutton(self, text='Atomic contribution', name='type_ato', value='ato', variable=self.des_type, command=self.radio_atom).grid(
+        ttk.Radiobutton(self, text='Atomic contribution', name='type_ato', value='ato', variable=self.des_type).grid(
             column=0, row=0, sticky=(tk.W), padx=5, pady=5)
-        ttk.Radiobutton(self, text='Bond contributions', name='type_bond', value='bond', variable=self.des_type, command=self.radio_bond).grid(
+        ttk.Radiobutton(self, text='Bond contributions', name='type_bond', value='bond', variable=self.des_type).grid(
             column=6, row=0, sticky=(tk.E,tk.W), padx=5, pady=5)
-
+        """
         if self._full_version:
-            ttk.Checkbutton(self, variable=self.des_std, name='chk_std_a', text='Standard distance',
+            ttk.Checkbutton(self, variable=self.des_atz, name='chk_atz_a', text='Atomic number',
                             command=self.ato_des_checked).grid(column=0, row=3, sticky=(tk.W), padx=5,
                                                                pady=(1, 0))
-            ttk.Checkbutton(self, variable=self.des_dip, name='chk_dip_a', text='Dipole moment',
+            ttk.Checkbutton(self, variable=self.des_ele, name='chk_ele_a', text='Electronegativity',
                             command=self.ato_des_checked).grid(column=0, row=4, sticky=(tk.W), padx=5,
                                                                  pady=(1, 0))
-            ttk.Checkbutton(self, variable=self.des_dip2, name='chk_dip2_a', text='Dipole moment 2',
+            ttk.Checkbutton(self, variable=self.des_ipo, name='chk_ipo_a', text='Ionization Potential',
                             command=self.ato_des_checked).grid(column=0, row=5, sticky=(tk.W), padx=5,
                                                                  pady=(1, 0))
             ttk.Checkbutton(self, variable=self.des_hyd, name='chk_hyd_a', text='Hydrophobicity',
@@ -171,12 +172,13 @@ class DescriptorsFrame(ttk.Labelframe):
             ttk.Checkbutton(self, variable=self.des_l16_b, name='chk_l16_b', text='Abraham-L16',
                             command=self.bond_des_checked).grid(column=7, row=10, sticky=(tk.E,tk.W), padx=5,
                                                                  pady=(1, 0))
-
+        """
         self.columnconfigure(0, pad=80)
+    """
     def radio_atom(self):
-        self.des_std.set(value=True)
-        self.des_dip.set(value=True)
-        self.des_dip2.set(value=True)
+        self.des_atz.set(value=True)
+        self.des_ele.set(value=True)
+        self.des_ipo.set(value=True)
         self.des_hyd.set(value=True)
         self.des_pls.set(value=True)
         self.des_mr.set(value=True)
@@ -208,9 +210,9 @@ class DescriptorsFrame(ttk.Labelframe):
         self.des_l16_b.set(value=False)
 
     def radio_bond(self):
-        self.des_std.set(value=False)
-        self.des_dip.set(value=False)
-        self.des_dip2.set(value=False)
+        self.des_atz.set(value=False)
+        self.des_ele.set(value=False)
+        self.des_ipo.set(value=False)
         self.des_hyd.set(value=False)
         self.des_pls.set(value=False)
         self.des_mr.set(value=False)
@@ -241,11 +243,13 @@ class DescriptorsFrame(ttk.Labelframe):
         self.des_b2o_b.set(value=True)
         self.des_l16_b.set(value=True)
 
+    """
     def bond_des_checked(self):
         self.des_type.set(value='bond')
-        self.des_std.set(value=False)
-        self.des_dip.set(value=False)
-        self.des_dip2.set(value=False)
+        """
+        self.des_atz.set(value=False)
+        self.des_ele.set(value=False)
+        self.des_ipo.set(value=False)
         self.des_hyd.set(value=False)
         self.des_pls.set(value=False)
         self.des_mr.set(value=False)
@@ -259,9 +263,11 @@ class DescriptorsFrame(ttk.Labelframe):
         self.des_b2h.set(value=False)
         self.des_b2o.set(value=False)
         self.des_l16.set(value=False)
+        """
 
     def ato_des_checked(self):
         self.des_type.set(value='ato')
+        """
         self.des_std_b.set(value=False)
         self.des_dip_b.set(value=False)
         self.des_dip2_b.set(value=False)
@@ -278,11 +284,13 @@ class DescriptorsFrame(ttk.Labelframe):
         self.des_b2h_b.set(value=False)
         self.des_b2o_b.set(value=False)
         self.des_l16_b.set(value=False)
+        """
 
     def get_selected_descriptors(self):
 
         output = []
         if self._full_version:
+            """
             if self.des_type.get() == 'bond':
                 if self.des_std_b.get(): output.append('Std')
                 if self.des_dip_b.get(): output.append('Dip')
@@ -301,9 +309,9 @@ class DescriptorsFrame(ttk.Labelframe):
                 if self.des_b2o_b.get(): output.append('Ab-sumB20')
                 if self.des_l16_b.get(): output.append('Ab-logL16')
             else:
-                if self.des_std.get(): output.append('Std')
-                if self.des_dip.get(): output.append('Dip')
-                if self.des_dip2.get(): output.append('Dip2')
+                if self.des_atz.get(): output.append('Atz')
+                if self.des_ele.get(): output.append('Ele')
+                if self.des_ipo.get(): output.append('IPot')
                 if self.des_hyd.get(): output.append('Hyd')
                 if self.des_pls.get(): output.append('Pols')
                 if self.des_mr.get(): output.append('Mol')
@@ -317,9 +325,14 @@ class DescriptorsFrame(ttk.Labelframe):
                 if self.des_b2h.get(): output.append('Ab-sumB2H')
                 if self.des_b2o.get(): output.append('Ab-sumB20')
                 if self.des_l16.get(): output.append('Ab-logL16')
+                """
         else:
-            output = ['Std', 'Dip', 'Dip2', 'Hyd', 'Pols', 'Mol', 'Pol', 'Van', 'Gas', 'Ato', 'Ab-R2',
+            if self.des_type.get() == 'bond':
+                output = ['Std', 'Dip', 'Dip2', 'Hyd', 'Pols', 'Mol', 'Pol', 'Van', 'Gas', 'Ato', 'Ab-R2',
                              'Ab-pi2H', 'Ab-sumA2H', 'Ab-sumB2H', 'Ab-sumB20', 'Ab-logL16']
+            else:
+                output = ['Atz', 'Ele', 'IPot', 'Hyd', 'Pols', 'Mol', 'Pol', 'Van', 'Gas', 'Ato', 'Ab-R2',
+                          'Ab-pi2H', 'Ab-sumA2H', 'Ab-sumB2H', 'Ab-sumB20', 'Ab-logL16']
 
         return output
 
@@ -468,7 +481,7 @@ class Tab_1(ttk.Frame):
         print("Descriptors calculation started. Please wait it can take some time")
 
         TOPS.main_params(in_fname=self.path.get(), out_fname='TOPSMODE.csv',
-                         des_names=self.des_frame.get_selected_descriptors(),
+                         #des_names=self.des_frame.get_selected_descriptors(),
                          activity_field_set=self.activity.get(),
                          des_type=self.des_frame.des_type.get(), numero=self.number_count.get_value(), id_field_set=self.nombres.get(), verbose=0)
 
@@ -559,6 +572,7 @@ class Tab_2(ttk.Frame):
                                            type_set=self.tipo, linear_set='lin', data_only=self.datos.get(), verbose=0)
         self.tree.insert('', 'end', values=('modelo_' + str(i+1), 'consenso', '-', '-', "--"), tags='checked')
         self.modelos.append(['modelo_' + str(i+1), 'consenso', '-', '-'])
+        print(self.names)
         print('Calculation finished')
 
 
@@ -611,8 +625,11 @@ class Tab_2(ttk.Frame):
                                                                                  pady=(0, 5))
         ttk.Radiobutton(frame, text='Only Data', variable=self.datos,
                         value='data').grid(column=2, row=1, sticky=(tk.W), padx=5, pady=1)
-        ttk.Radiobutton(frame, text='Data+Structure', variable=self.datos,
+        ttk.Radiobutton(frame, text='Data+Structure only total', variable=self.datos,
                         value='total').grid(column=3, row=1, sticky=(tk.W), padx=5, pady=1)
+        ttk.Radiobutton(frame, text='Data+Structure partial and total', variable=self.datos,
+                        value='partial').grid(column=4, row=1, sticky=(tk.W), padx=5, pady=1)
+
         tabla = ttk.Labelframe(self, text='Models table', name='t_comp')
         tabla.grid(column=0, row=2, sticky=(tk.E, tk.W), padx=5, pady=5)
         self.tree = ttk.Treeview(tabla, height=12)
@@ -765,6 +782,7 @@ class Tab_2(ttk.Frame):
         resized = self.original.resize((400, 400), Image.ANTIALIAS)
         self.image = ImageTk.PhotoImage(resized)  # Keep a reference, prevent GC
         self.l2.config(image=self.image)
+        print(self.names)
         self.label.config(text=self.names[self.n_mol - 1])
 
 
